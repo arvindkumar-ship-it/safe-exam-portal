@@ -1,0 +1,22 @@
+<!-- C-24 sample. Import: Set-AppLockerPolicy -XmlPolicy applocker-sample.xml ; validate: Get-AppLockerPolicy -Xml
+     SID S-1-1-0 = Everyone. Pehle AuditOnly me test karo; <Publisher> values apne code-signing cert se badlo. -->
+<AppLockerPolicy Version="1">
+  <RuleCollection Type="Exe" EnforcementMode="AuditOnly">
+    <FilePathRule Id="a61c8b2c-a319-4cd0-9690-d2177cad7b51" Name="Allow Windows" Description="OS apps" UserOrGroupSid="S-1-1-0" Action="Allow">
+      <Conditions><FilePathCondition Path="%WINDIR%\*" /></Conditions>
+    </FilePathRule>
+    <FilePathRule Id="921cc481-6e17-4653-8f75-050b80acca20" Name="Allow Program Files" Description="Installed system apps" UserOrGroupSid="S-1-1-0" Action="Allow">
+      <Conditions><FilePathCondition Path="%PROGRAMFILES%\*" /></Conditions>
+    </FilePathRule>
+    <FilePublisherRule Id="b1f0c9b2-5d6e-4f7a-8a11-2c3d4e5f6a70" Name="Allow signed SafeExam" Description="Only signed SafeExam client" UserOrGroupSid="S-1-1-0" Action="Allow">
+      <Conditions>
+        <FilePublisherCondition PublisherName="CN=SafeExam" ProductName="SAFEEXAM*" BinaryName="SAFEEXAM.CLIENT.EXE">
+          <BinaryVersionRange LowSection="1.0.0.0" HighSection="*" />
+        </FilePublisherCondition>
+      </Conditions>
+    </FilePublisherRule>
+    <FilePathRule Id="fd686d83-a829-4351-8ff4-27c7de5755d2" Name="Admins run anything" Description="Administrators" UserOrGroupSid="S-1-5-32-544" Action="Allow">
+      <Conditions><FilePathCondition Path="*" /></Conditions>
+    </FilePathRule>
+  </RuleCollection>
+</AppLockerPolicy>
