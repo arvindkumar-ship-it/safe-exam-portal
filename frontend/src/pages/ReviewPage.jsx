@@ -1,0 +1,18 @@
+import { useState } from "react";
+import { useAuth } from "../auth/useAuth";
+import AttemptTimeline from "../features/review/AttemptTimeline";
+import ReviewQueue from "../features/review/ReviewQueue";
+
+export default function ReviewPage() {
+  const { user } = useAuth();
+  const [attemptId, setAttemptId] = useState(null);
+  const canAssign = user.role === "INSTRUCTOR" || user.role === "ADMIN"; // reviewer assign nahi kar sakta
+  return (
+    <main>
+      <h1>Review</h1>
+      {attemptId
+        ? <AttemptTimeline attemptId={attemptId} canAssign={canAssign} onBack={() => setAttemptId(null)} />
+        : <ReviewQueue onSelect={setAttemptId} />}
+    </main>
+  );
+}
