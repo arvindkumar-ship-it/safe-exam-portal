@@ -1,0 +1,9 @@
+bin/
+obj/
+.vs/
+*.user
+scripts/dev-keys/
+*.priv.pem
+dev.safeexam
+publish/
+dist/
