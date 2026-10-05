@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+node_modules/
+dist/
+
+# native client
+native-client/**/bin/
+native-client/**/obj/
+native-client/scripts/dev-keys/
+*.priv.pem
+dev.safeexam

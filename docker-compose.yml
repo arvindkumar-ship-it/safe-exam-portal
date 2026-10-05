@@ -1,0 +1,27 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: safeexam
+      POSTGRES_PASSWORD: safeexam
+      POSTGRES_DB: safeexam
+    ports: ["5434:5432"]          # host:container, sirf ye badla
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U safeexam"]
+      interval: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    environment:
+      ENV: local
+      DATABASE_URL: postgresql+psycopg://safeexam:safeexam@db:5432/safeexam   # yahan 5432 hi
+      JWT_SECRET: change-me-local-only-min-32-chars-long
+      ALLOWED_ORIGINS: http://localhost:5173
+    depends_on:
+      db: { condition: service_healthy }
+    ports: ["8001:8000"]
+
+volumes:
+  pgdata:
