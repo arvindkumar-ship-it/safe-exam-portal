@@ -1,5 +1,5 @@
 import { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { resolvePolicy, WARNING_BY_EVENT, MESSAGES } from './policy.js';
+import { resolvePolicy, WARNING_BY_EVENT, MESSAGES, STRICT_EVENTS } from './policy.js';
 import { createEventFactory } from './events/eventFactory.js';
 import { EventQueue } from './events/eventQueue.js';
 import { openEventStore } from './events/indexedDbEventStore.js';
@@ -13,7 +13,7 @@ import { createShortcutMonitor } from './monitors/shortcutMonitor.js';
 import { createContextMenuMonitor } from './monitors/contextMenuMonitor.js';
 import { createSelectionMonitor } from './monitors/selectionMonitor.js';
 import { createNetworkMonitor } from './monitors/networkMonitor.js';
-import { createHeartbeatMonitor } from './monitors/heartbeatMonitor.js';
+import { createHeartbeatMonitor, TERMINAL_STATUSES } from './monitors/heartbeatMonitor.js';
 import { createPermissionMonitor } from './system-check/checkCamera.js';
 import { onNativeEvent } from './nativeBridgeAdapter.js';
 
@@ -70,7 +70,12 @@ export function MonitoringProvider({ attemptId, policy, consentGiven, children, 
       const factory = createEventFactory({ attemptId, startSequence });
       const uploader = createEventUploader({
         queue, attemptId, sendEvents: d.sendEvents || defaultSendEvents, ...(d.uploader || {}),
-        onUploaded: () => { setLastUploadAt(new Date().toISOString()); setQueued(queue.size()); },
+        onUploaded: (res) => {
+          setLastUploadAt(new Date().toISOString());
+          setQueued(queue.size());
+          // Strict mode: server ne attempt submit kar diya => shell ko turant batao.
+          if (res && TERMINAL_STATUSES.has(res.attemptStatus) && cbRef.current.onAttemptStatus) cbRef.current.onAttemptStatus(res.attemptStatus);
+        },
       });
 
       let seq = 0;
@@ -78,7 +83,8 @@ export function MonitoringProvider({ attemptId, policy, consentGiven, children, 
         try {
           const meta = p.accessibilityMode ? { ...metadata, accessibilityMode: true } : metadata;
           const ev = factory.create(eventType, meta);
-          queue.add(ev).then(() => { setQueued(queue.size()); uploader.notify(); });
+          const strict = p.autoSubmitOnViolation && STRICT_EVENTS.has(eventType);
+          queue.add(ev).then(() => { setQueued(queue.size()); if (strict) uploader.flush(); else uploader.notify(); });
           if (WARNING_BY_EVENT[eventType]) {
             seq += 1;
             setWarning({ message: WARNING_BY_EVENT[eventType], type: eventType, seq });

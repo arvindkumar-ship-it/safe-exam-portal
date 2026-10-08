@@ -10,7 +10,8 @@ from app.utils import clock
 from app.utils.clock import to_iso
 
 log = logging.getLogger("safeexam.submission")
-TARGET = {"TIME_EXPIRED": "AUTO_SUBMITTED", "POLICY_TERMINATION": "TERMINATED"}  # baaki -> SUBMITTED
+TARGET = {"TIME_EXPIRED": "AUTO_SUBMITTED", "POLICY_VIOLATION": "AUTO_SUBMITTED",
+          "POLICY_TERMINATION": "TERMINATED"}  # baaki -> SUBMITTED
 
 
 def _existing(db, attempt_id):

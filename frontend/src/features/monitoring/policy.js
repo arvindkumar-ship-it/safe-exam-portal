@@ -4,7 +4,11 @@ export const DEFAULT_POLICY = {
   selection: { block: true }, network: true, heartbeat: true, camera: false, microphone: false,
   accessibilityMode: false,
   offlineGraceSeconds: 300, // B-23 (extra key)
+  autoSubmitOnViolation: false, // strict mode: tab switch / minimize / fullscreen exit par turant auto-submit
 };
+
+// Strict mode me yahi events violation hain (backend risk_service.STRICT_EVENTS ke same).
+export const STRICT_EVENTS = new Set(['PAGE_HIDDEN', 'WINDOW_BLUR', 'FULLSCREEN_EXIT']);
 
 // Student-facing messages (exact text).
 export const MESSAGES = {

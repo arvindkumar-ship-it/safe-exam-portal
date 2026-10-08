@@ -6,6 +6,18 @@ from app.models.security_event import SecurityEvent
 from app.services import attempt_service, notification_service
 
 
+# Strict mode (exam monitoringPolicy {"autoSubmitOnViolation": true}): in events par turant auto-submit.
+# PAGE_HIDDEN = tab switch / minimize, WINDOW_BLUR = dusri window par focus, FULLSCREEN_EXIT = fullscreen se bahar.
+STRICT_EVENTS = frozenset({"PAGE_HIDDEN", "WINDOW_BLUR", "FULLSCREEN_EXIT"})
+
+
+def is_strict_violation(exam, event_type: str, metadata: dict | None) -> bool:
+    policy = exam.monitoring_policy or {}
+    if policy.get("autoSubmitOnViolation") is not True or event_type not in STRICT_EVENTS:
+        return False
+    return weight_for(event_type, metadata) > 0  # accessibilityMode me weight 0 => violation nahi
+
+
 def apply_event(db: Session, attempt, event) -> int:
     """Risk update. Auto-terminate kabhi nahi; sirf policy ho toh UNDER_REVIEW. Commit caller karta hai."""
     w = weight_for(event.event_type, event.event_metadata)

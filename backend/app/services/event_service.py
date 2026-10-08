@@ -7,7 +7,7 @@ from app.events.event_types import CLIENT_SOURCES
 from app.events.event_validator import validate_event
 from app.events.risk_rules import severity_for, weight_for
 from app.models.security_event import SecurityEvent
-from app.services import attempt_service, audit_service, risk_service
+from app.services import attempt_service, audit_service, risk_service, submission_service
 from app.utils import clock
 
 LATE_EVENT_WINDOW = timedelta(minutes=5)
@@ -40,6 +40,7 @@ def ingest_batch(db: Session, student, attempt_id: str, events: list) -> dict:
     existing = set(db.scalars(select(SecurityEvent.sequence_number).where(
         SecurityEvent.attempt_id == attempt.id, SecurityEvent.source == source)))
     accepted = duplicates = 0
+    violation = False
     rejected = []
     order = sorted(events, key=lambda e: e.get("clientSequence") if isinstance(e.get("clientSequence"), int) else 10**9)
     for raw in order:
@@ -56,7 +57,12 @@ def ingest_batch(db: Session, student, attempt_id: str, events: list) -> dict:
         ev = audit_service.append_security_event(db, attempt.id, v.event_type, sev, source, v.occurred_at,
                                                  v.sequence, v.metadata, now)
         risk_service.apply_event(db, attempt, ev)
+        if risk_service.is_strict_violation(attempt.exam, v.event_type, v.metadata):
+            violation = True
         accepted += 1
     db.commit()
+    if violation and attempt.status == "ACTIVE":  # events pehle commit, phir submit (idempotent)
+        submission_service.submit_attempt(db, attempt, "POLICY_VIOLATION")
+    db.refresh(attempt)
     return {"source": source, "acknowledgedUpTo": _acknowledged(db, attempt.id, source), "accepted": accepted,
-            "duplicates": duplicates, "rejected": rejected}
+            "duplicates": duplicates, "rejected": rejected, "attemptStatus": attempt.status}
