@@ -4,7 +4,7 @@ export const DEFAULT_POLICY = {
   selection: { block: true }, network: true, heartbeat: true, camera: false, microphone: false,
   accessibilityMode: false,
   offlineGraceSeconds: 300, // B-23 (extra key)
-  autoSubmitOnViolation: false, // strict mode: tab switch / minimize / fullscreen exit par turant auto-submit
+  autoSubmitOnViolation: true, // strict mode (default ON): tab switch / minimize / fullscreen exit par turant auto-submit; exam policy false de toh off
 };
 
 // Strict mode me yahi events violation hain (backend risk_service.STRICT_EVENTS ke same).

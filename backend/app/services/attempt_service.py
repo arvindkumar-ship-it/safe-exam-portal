@@ -8,6 +8,7 @@ from app.models.exam import Exam
 from app.security.policies import ensure
 from app.services import attempt_question_service as aqs
 from app.services import exam_question_service as eqs
+from app.services.policy_service import effective_policy
 from app.utils import clock
 from app.utils.clock import to_iso
 from app.utils.randomization import new_seed
@@ -95,5 +96,5 @@ def attempt_view(db: Session, attempt: Attempt) -> dict:
             "exam": {"id": exam.id, "title": exam.title, "durationSeconds": exam.duration_seconds},
             "status": attempt.status, "startedAt": to_iso(attempt.started_at), "expiresAt": to_iso(attempt.expires_at),
             "submittedAt": to_iso(attempt.submitted_at), "serverTime": to_iso(clock.utc_now()),
-            "monitoringPolicy": exam.monitoring_policy or {},
+            "monitoringPolicy": effective_policy(exam),
             "questions": aqs.render_questions_for_student(attempt.question_order, snaps, answers)}

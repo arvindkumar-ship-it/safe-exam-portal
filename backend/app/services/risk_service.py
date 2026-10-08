@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.events.risk_rules import EVENT_WEIGHTS, risk_level, severity_for, weight_for  # noqa: F401 (re-export)
 from app.models.security_event import SecurityEvent
 from app.services import attempt_service, notification_service
+from app.services.policy_service import effective_policy
 
 
 # Strict mode (exam monitoringPolicy {"autoSubmitOnViolation": true}): in events par turant auto-submit.
@@ -12,7 +13,7 @@ STRICT_EVENTS = frozenset({"PAGE_HIDDEN", "WINDOW_BLUR", "FULLSCREEN_EXIT"})
 
 
 def is_strict_violation(exam, event_type: str, metadata: dict | None) -> bool:
-    policy = exam.monitoring_policy or {}
+    policy = effective_policy(exam)
     if policy.get("autoSubmitOnViolation") is not True or event_type not in STRICT_EVENTS:
         return False
     return weight_for(event_type, metadata) > 0  # accessibilityMode me weight 0 => violation nahi

@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     TEST_UPLOAD_MAX_BYTES: int = 20_000_000   # ek request
     JUDGE_LEASE_SECONDS: int = 60
     JUDGE_MAX_TRIES: int = 3
+    STRICT_MODE_DEFAULT: bool = True   # exam policy me autoSubmitOnViolation na ho toh yahi lagu (exam false de toh opt-out)
 
     @property
     def origins(self) -> list[str]:

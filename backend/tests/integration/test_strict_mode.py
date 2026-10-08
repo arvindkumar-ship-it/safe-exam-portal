@@ -47,7 +47,15 @@ def test_strict_mode_ignores_info_events_and_accessibility_mode(client, make_use
     assert r.json()["data"]["attemptStatus"] == "ACTIVE"
 
 
-def test_default_policy_never_auto_submits(client, make_user, auth, db, mk_q, mk_exam):
-    s, a = _started(client, auth, db, make_user, mk_q, mk_exam, {})
+def test_default_policy_is_strict(client, make_user, auth, db, mk_q, mk_exam):
+    s, a = _started(client, auth, db, make_user, mk_q, mk_exam, {})   # exam ne kuch set nahi kiya => platform default (strict)
+    start = client.get(f"/attempts/{a}", headers=auth(s)).json()["data"]
+    assert start["monitoringPolicy"]["autoSubmitOnViolation"] is True
+    r = _post(client, auth, s, a, [_event(1, "PAGE_HIDDEN")])
+    assert r.json()["data"]["attemptStatus"] == "AUTO_SUBMITTED"
+
+
+def test_exam_can_opt_out_of_strict_mode(client, make_user, auth, db, mk_q, mk_exam):
+    s, a = _started(client, auth, db, make_user, mk_q, mk_exam, {"autoSubmitOnViolation": False})
     r = _post(client, auth, s, a, [_event(1, "PAGE_HIDDEN"), _event(2, "WINDOW_BLUR"), _event(3, "FULLSCREEN_EXIT")])
     assert r.json()["data"]["attemptStatus"] == "ACTIVE"
