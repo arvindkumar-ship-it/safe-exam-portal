@@ -65,33 +65,35 @@ export default function CodingPane({ question, attemptId, value, onChange }) {
 
   return (
     <div className="coding-pane">
-      <p><small>Time limit {cfg.timeLimitMs} ms · Memory {cfg.memoryLimitMb} MB</small></p>
+      <p className="coding-meta">Time limit {cfg.timeLimitMs} ms · Memory {cfg.memoryLimitMb} MB</p>
       {(cfg.samples || []).map((s, i) => (
-        <div key={i} className="form-row">
-          <div><strong>Sample input {i + 1}</strong><pre>{s.input}</pre></div>
-          <div><strong>Sample output {i + 1}</strong><pre>{s.output}</pre></div>
+        <div key={i} className="samples">
+          <div><span className="sample-label">Sample input {i + 1}</span><pre>{s.input}</pre></div>
+          <div><span className="sample-label">Sample output {i + 1}</span><pre>{s.output}</pre></div>
         </div>
       ))}
-      <label>Language
-        <select value={lang} onChange={(e) => edit(e.target.value, src)} disabled={busy}>
-          {langs.map((l) => <option key={l} value={l}>{LABEL[l] || l}</option>)}
-        </select>
-      </label>
+      <div className="coding-toolbar">
+        <label>Language
+          <select value={lang} onChange={(e) => edit(e.target.value, src)} disabled={busy}>
+            {langs.map((l) => <option key={l} value={l}>{LABEL[l] || l}</option>)}
+          </select>
+        </label>
+      </div>
       <textarea
-        aria-label="Code editor" spellCheck={false} autoCapitalize="off" autoCorrect="off" value={src}
+        aria-label="Code editor" className="code-editor" spellCheck={false} autoCapitalize="off" autoCorrect="off" value={src}
         onChange={(e) => edit(lang, e.target.value)} onKeyDown={onKey} rows={18}
-        style={{ width: "100%", fontFamily: "ui-monospace, Consolas, monospace", fontSize: 14, tabSize: 4, whiteSpace: "pre" }}
       />
-      <div className="form-row">
+      <div className="coding-actions">
         <small>{bytes(src)} / {MAX_BYTES} bytes · Ctrl+Enter = Run</small>
-        <button type="button" onClick={() => go("RUN")} disabled={busy}>Run samples</button>
-        <button type="button" className="primary" onClick={() => go("SUBMIT")} disabled={busy}>Submit</button>
+        <button type="button" className="btn btn-secondary" onClick={() => go("RUN")} disabled={busy}>Run samples</button>
+        <button type="button" className="btn btn-primary" onClick={() => go("SUBMIT")} disabled={busy}>Submit</button>
       </div>
       {err && <div role="alert" className="error-message">{err}</div>}
       {cur && <Result s={cur} />}
       {hist.length > 0 && (
         <details>
           <summary>My submissions ({hist.length})</summary>
+          <div className="table-wrap">
           <table>
             <thead><tr><th>Time</th><th>Mode</th><th>Lang</th><th>Verdict</th><th>Passed</th><th>Score</th><th /></tr></thead>
             <tbody>{hist.map((h) => (
@@ -99,9 +101,10 @@ export default function CodingPane({ question, attemptId, value, onChange }) {
                 <td>{new Date(h.createdAt).toLocaleTimeString()}</td><td>{h.mode}</td><td>{LABEL[h.language] || h.language}</td>
                 <td>{h.status === "DONE" ? VERDICT[h.verdict] || h.verdict : h.status}</td>
                 <td>{h.passed}/{h.total}</td><td>{h.mode === "SUBMIT" ? h.score : "—"}</td>
-                <td><button type="button" onClick={async () => { const d = await codeApi.get(attemptId, h.id); setCur(d); edit(d.language, d.source ?? src); }}>Load</button></td>
+                <td><button type="button" className="btn btn-ghost btn-sm" onClick={async () => { const d = await codeApi.get(attemptId, h.id); setCur(d); edit(d.language, d.source ?? src); }}>Load</button></td>
               </tr>))}</tbody>
           </table>
+          </div>
         </details>
       )}
     </div>
@@ -112,8 +115,8 @@ function Result({ s }) {
   if (s.status !== "DONE") return <p role="status" aria-live="polite">{s.status === "QUEUED" ? "In queue…" : "Judging…"}</p>;
   const ok = s.verdict === "AC";
   return (
-    <div role="status" aria-live="polite" className="card">
-      <h4 style={{ color: ok ? "green" : "crimson" }}>{VERDICT[s.verdict] || s.verdict}{s.failedTest ? ` on test ${s.failedTest}` : ""}</h4>
+    <div role="status" aria-live="polite" className={`verdict ${ok ? "verdict--ok" : "verdict--bad"}`}>
+      <h4>{VERDICT[s.verdict] || s.verdict}{s.failedTest ? ` on test ${s.failedTest}` : ""}</h4>
       <p>
         Passed {s.passed}/{s.total}
         {s.mode === "SUBMIT" && <> · Score {s.score}/{s.maxScore}</>}
@@ -122,6 +125,7 @@ function Result({ s }) {
       </p>
       {s.compileOutput && <pre>{s.compileOutput}</pre>}
       {s.tests.length > 0 && (
+        <div className="table-wrap">
         <table>
           <thead><tr><th>#</th><th>Verdict</th><th>Time</th></tr></thead>
           <tbody>{s.tests.map((t) => (
@@ -130,6 +134,7 @@ function Result({ s }) {
               {t.isSample && t.verdict !== "AC" && <td><pre>expected: {t.expected}{"\n"}got: {t.actual}</pre></td>}
             </tr>))}</tbody>
         </table>
+        </div>
       )}
     </div>
   );

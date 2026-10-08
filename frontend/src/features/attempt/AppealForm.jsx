@@ -28,7 +28,7 @@ export default function AppealForm({ attemptId }) {
       <label>Appeal reason<textarea value={reason} onChange={(e) => setReason(e.target.value)} /></label>
       {localError && <div role="alert" className="error-message">{localError}</div>}
       <ErrorMessage error={error} />
-      <Button type="submit">Send appeal</Button>
+      <div><Button type="submit" size="sm">Send appeal</Button></div>
     </form>
   );
 }

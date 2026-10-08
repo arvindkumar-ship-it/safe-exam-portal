@@ -40,7 +40,7 @@ export default function DecisionForm({ attemptId, onSaved }) {
       <label>Reason<textarea value={reason} onChange={(e) => setReason(e.target.value)} /></label>
       {localError && <div role="alert" className="error-message">{localError}</div>}
       <ErrorMessage error={error} />
-      <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Record decision"}</Button>
+      <Button type="submit" disabled={busy} className="btn-block">{busy ? "Saving…" : "Record decision"}</Button>
       <small>Decisions are append-only and cannot be edited later.</small>
     </form>
   );

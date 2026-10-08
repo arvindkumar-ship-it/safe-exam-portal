@@ -15,19 +15,22 @@ export default function SystemCheckPage({ policy, onContinue, practice = false }
   useEffect(() => { run(); }, [run]);
 
   return (
-    <main className="system-check">
+    <main className="system-check narrow">
       <h1>{practice ? 'Practice system check' : 'System readiness check'}</h1>
-      <p aria-live="polite">{running ? 'Checking your device…' : result ? (result.passed ? 'Your device is ready.' : 'Please fix the items marked FAIL.') : ''}</p>
-      <ul>
+      <p aria-live="polite" className="lede">{running ? 'Checking your device…' : result ? (result.passed ? 'Your device is ready.' : 'Please fix the items marked FAIL.') : ''}</p>
+      <ul className="check-list">
         {(result ? result.checks : []).map((c) => (
-          <li key={c.id} data-status={c.status}>
-            <strong>{c.status}</strong> — {c.label}: {c.message}
+          <li key={c.id} data-status={c.status} className="check-item">
+            <span className="badge">{c.status}</span>
+            <span className="check-item__body"><span className="check-item__label">{c.label}</span>: <span className="check-item__msg">{c.message}</span></span>
           </li>
         ))}
       </ul>
-      <button type="button" className="btn btn-secondary" onClick={run} disabled={running}>Run again</button>
-      {' '}<Link to="/">Back</Link>
-      {onContinue && <button type="button" className="primary" disabled={!result || !result.passed} onClick={onContinue}>Continue</button>}
+      <div className="page-actions">
+        <Link to="/" className="btn btn-ghost">Back</Link>
+        <button type="button" className="btn btn-secondary" onClick={run} disabled={running}>Run again</button>
+        {onContinue && <button type="button" className="btn btn-primary" disabled={!result || !result.passed} onClick={onContinue}>Continue</button>}
+      </div>
     </main>
   );
 }

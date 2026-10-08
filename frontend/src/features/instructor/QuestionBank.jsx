@@ -38,29 +38,33 @@ export default function QuestionBank() {
 
   return (
     <section>
-      <div className="form-row">
+      <div className="section-head">
         <h2>Question bank</h2>
         <Button onClick={() => setEditing(null)}>New question</Button>
       </div>
       <ErrorMessage error={error} />
       {!data && !error && <Loading />}
-      {data && data.items.length === 0 && <p className="empty">No questions yet.</p>}
+      {data && data.items.length === 0 && <p className="empty card">No questions yet.</p>}
       {data && data.items.length > 0 && (
         <>
+          <div className="table-wrap">
           <table>
-            <thead><tr><th>Type</th><th>Prompt</th><th>Marks</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Type</th><th>Prompt</th><th className="num">Marks</th><th className="num">Actions</th></tr></thead>
             <tbody>
               {data.items.map((q) => (
                 <tr key={q.id}>
-                  <td>{q.questionType}</td><td>{q.prompt}</td><td>{q.marks}</td>
+                  <td><span className="badge">{q.questionType}</span></td><td className="cell-title">{q.prompt}</td><td className="num">{q.marks}</td>
                   <td>
-                    <Button variant="secondary" onClick={() => setEditing(q)}>Edit</Button>{" "}
-                    <Button variant="danger" onClick={() => deactivate(q)}>Deactivate</Button>
+                    <div className="row-actions">
+                      <Button variant="ghost" size="sm" onClick={() => setEditing(q)}>Edit</Button>
+                      <Button variant="danger" size="sm" onClick={() => deactivate(q)}>Deactivate</Button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          </div>
           <Pagination page={data.page} pageSize={data.pageSize} total={data.total} onPage={setPage} />
         </>
       )}

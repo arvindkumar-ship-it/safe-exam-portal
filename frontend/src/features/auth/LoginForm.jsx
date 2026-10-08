@@ -29,8 +29,12 @@ export default function LoginForm({ onSuccess }) {
   }
 
   return (
-    <form onSubmit={submit} className="card form">
-      <h1>{mode === "login" ? "Sign in" : "Create account"}</h1>
+    <div className="auth-wrap">
+    <form onSubmit={submit} className="card auth-card form">
+      <div>
+        <h1>{mode === "login" ? "Sign in" : "Create account"}</h1>
+        <p className="lede">{mode === "login" ? "Continue to your exams." : "Create an account to get started."}</p>
+      </div>
       {mode === "register" && (
         <label>
           Full name
@@ -52,12 +56,15 @@ export default function LoginForm({ onSuccess }) {
         />
       </label>
       <ErrorMessage error={error} />
-      <Button type="submit" disabled={busy}>
+      <Button type="submit" disabled={busy} className="btn-block">
         {busy ? "Please wait…" : mode === "login" ? "Sign in" : "Register"}
       </Button>
-      <Button variant="link" onClick={() => setMode(mode === "login" ? "register" : "login")}>
-        {mode === "login" ? "Need an account? Register" : "Have an account? Sign in"}
-      </Button>
     </form>
+      <div className="auth-switch">
+        <Button variant="link" onClick={() => setMode(mode === "login" ? "register" : "login")}>
+          {mode === "login" ? "Need an account? Register" : "Have an account? Sign in"}
+        </Button>
+      </div>
+    </div>
   );
 }

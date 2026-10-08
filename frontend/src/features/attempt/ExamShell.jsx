@@ -146,7 +146,9 @@ function ExamShellInner({ attempt, policy, expiresAt, clock, onServerTime, finis
           <div className="modal" role="dialog" aria-modal="true" aria-labelledby="fs-title">
             <h2 id="fs-title">Enter fullscreen to continue</h2>
             <p>This exam must run in fullscreen. Leaving fullscreen, switching tabs or switching windows will submit your exam automatically.</p>
-            <button type="button" className="primary" onClick={() => monitoring.enterFullscreen()}>Enter fullscreen</button>
+            <div className="modal-actions">
+              <button type="button" className="btn btn-primary" onClick={() => monitoring.enterFullscreen()}>Enter fullscreen</button>
+            </div>
           </div>
         </div>
       )}
@@ -158,7 +160,7 @@ function ExamShellInner({ attempt, policy, expiresAt, clock, onServerTime, finis
           <ol>
             {questions.map((qq, i) => (
               <li key={qq.id}>
-                <button type="button" aria-current={i === index ? 'step' : undefined} aria-label={`Question ${i + 1}${isAnswered(answers[qq.id]) ? ', answered' : ''}`} onClick={() => go(i)}>
+                <button type="button" className={isAnswered(answers[qq.id]) ? 'is-answered' : undefined} aria-current={i === index ? 'step' : undefined} aria-label={`Question ${i + 1}${isAnswered(answers[qq.id]) ? ', answered' : ''}`} onClick={() => go(i)}>
                   {i + 1}
                 </button>
               </li>
@@ -177,9 +179,9 @@ function ExamShellInner({ attempt, policy, expiresAt, clock, onServerTime, finis
       </div>
 
       <footer className="exam-actions">
-        <button type="button" onClick={() => go(index - 1)} disabled={index === 0}>Previous</button>
-        <button type="button" onClick={() => go(index + 1)} disabled={index >= questions.length - 1}>Next</button>
-        <button type="button" className="primary" onClick={() => setConfirming(true)}>Submit exam</button>
+        <button type="button" className="btn btn-secondary" onClick={() => go(index - 1)} disabled={index === 0}>Previous</button>
+        <button type="button" className="btn btn-secondary" onClick={() => go(index + 1)} disabled={index >= questions.length - 1}>Next</button>
+        <button type="button" className="btn btn-primary" onClick={() => setConfirming(true)}>Submit exam</button>
       </footer>
 
       {confirming && (
@@ -187,11 +189,13 @@ function ExamShellInner({ attempt, policy, expiresAt, clock, onServerTime, finis
           <div className="modal" role="dialog" aria-modal="true" aria-labelledby="submit-title">
             <h2 id="submit-title">Submit your exam?</h2>
             <p>You will not be able to change your answers after submitting.</p>
-            {error && <p role="alert">{error}</p>}
-            <button type="button" onClick={() => setConfirming(false)} disabled={submitting}>Cancel</button>
-            <button type="button" ref={confirmBtn} className="primary" onClick={() => doSubmit()} disabled={submitting}>
-              {submitting ? 'Submitting…' : 'Confirm submit'}
-            </button>
+            {error && <p role="alert" className="error-message">{error}</p>}
+            <div className="modal-actions">
+              <button type="button" className="btn btn-secondary" onClick={() => setConfirming(false)} disabled={submitting}>Cancel</button>
+              <button type="button" ref={confirmBtn} className="btn btn-primary" onClick={() => doSubmit()} disabled={submitting}>
+                {submitting ? 'Submitting…' : 'Confirm submit'}
+              </button>
+            </div>
           </div>
         </div>
       )}

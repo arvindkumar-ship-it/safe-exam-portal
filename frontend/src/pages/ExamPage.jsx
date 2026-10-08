@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import Icon from "../components/Icon";
 import { attemptApi } from "../api/attemptApi";
 import { examApi } from "../api/examApi";
 import ErrorMessage from "../components/ErrorMessage";
@@ -14,12 +15,15 @@ function Finished({ result }) {
   const counted = result && result.answeredCount !== undefined;
   return (
     <main>
-      <h1>Exam {counted ? "submitted" : "finished"}</h1>
-      {counted
-        ? <p>You answered {result.answeredCount} of {result.totalQuestions} questions.</p>
-        : <p>Your attempt has been closed by the server{result?.status ? ` (${result.status})` : ""}.</p>}
-      {result?.discardedLocalAnswers && <p>Answers saved on this device after the server closed the attempt were discarded.</p>}
-      <Link to="/student">Back to dashboard</Link>
+      <div className="finished">
+        <span className="finished__icon"><Icon name="check" size={22} /></span>
+        <h1>Exam {counted ? "submitted" : "finished"}</h1>
+        {counted
+          ? <p>You answered {result.answeredCount} of {result.totalQuestions} questions.</p>
+          : <p>Your attempt has been closed by the server{result?.status ? ` (${result.status})` : ""}.</p>}
+        {result?.discardedLocalAnswers && <p>Answers saved on this device after the server closed the attempt were discarded.</p>}
+        <Link to="/student" className="btn btn-secondary">Back to dashboard</Link>
+      </div>
     </main>
   );
 }

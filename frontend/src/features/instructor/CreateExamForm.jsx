@@ -83,35 +83,48 @@ export default function CreateExamForm({ exam = null, onSaved, onCancel }) {
     }
   }
 
-  const fieldError = (k) => errors[k] && <span role="alert" className="error-message">{errors[k]}</span>;
+  const fieldError = (k) => errors[k] && <span role="alert" className="field-error">{errors[k]}</span>;
 
   return (
-    <form onSubmit={submit} className="card form" aria-label={exam ? "Edit exam" : "Create exam"}>
+    <form onSubmit={submit} className="card form form-card" aria-label={exam ? "Edit exam" : "Create exam"}>
       <h2>{exam ? "Edit exam" : "Create exam"}</h2>
       {locked && <p className="notice">This exam is {exam.status.toLowerCase()}; timing, shuffle and monitoring fields are read-only.</p>}
       <label>Title<input value={f.title} onChange={set("title")} />{fieldError("title")}</label>
       <label>Description<textarea value={f.description} onChange={set("description")} /></label>
-      <div className="form-row">
-        <label>Duration (minutes)<input type="number" value={f.durationMinutes} onChange={set("durationMinutes")} disabled={locked} />{fieldError("durationMinutes")}</label>
-        <label>Starts at<input type="datetime-local" value={f.startsAt} onChange={set("startsAt")} disabled={locked} /></label>
-        <label>Ends at<input type="datetime-local" value={f.endsAt} onChange={set("endsAt")} disabled={locked} />{fieldError("endsAt")}</label>
+
+      <div className="form-section">
+        <div className="form-section__title">Schedule</div>
+        <div className="grid-3">
+          <label>Duration (minutes)<input type="number" value={f.durationMinutes} onChange={set("durationMinutes")} disabled={locked} />{fieldError("durationMinutes")}</label>
+          <label>Starts at<input type="datetime-local" value={f.startsAt} onChange={set("startsAt")} disabled={locked} /></label>
+          <label>Ends at<input type="datetime-local" value={f.endsAt} onChange={set("endsAt")} disabled={locked} />{fieldError("endsAt")}</label>
+        </div>
       </div>
-      <div className="form-row">
-        <label>Max attempts<input type="number" value={f.maxAttempts} onChange={set("maxAttempts")} />{fieldError("maxAttempts")}</label>
-        <label>Pass marks<input type="number" step="0.01" value={f.passMarks} onChange={set("passMarks")} /></label>
+
+      <div className="form-section">
+        <div className="form-section__title">Attempts and results</div>
+        <div className="grid-2">
+          <label>Max attempts<input type="number" value={f.maxAttempts} onChange={set("maxAttempts")} />{fieldError("maxAttempts")}</label>
+          <label>Pass marks<input type="number" step="0.01" value={f.passMarks} onChange={set("passMarks")} /></label>
+        </div>
+        <div className="grid-2">
+          <label className="check"><input type="checkbox" checked={f.showResult} onChange={set("showResult")} /> Show result to students</label>
+          <label className="check"><input type="checkbox" checked={f.shuffleQuestions} onChange={set("shuffleQuestions")} disabled={locked} /> Shuffle questions</label>
+          <label className="check"><input type="checkbox" checked={f.shuffleOptions} onChange={set("shuffleOptions")} disabled={locked} /> Shuffle options</label>
+        </div>
       </div>
-      <div className="form-row">
-        <label><input type="checkbox" checked={f.showResult} onChange={set("showResult")} /> Show result to students</label>
-        <label><input type="checkbox" checked={f.shuffleQuestions} onChange={set("shuffleQuestions")} disabled={locked} /> Shuffle questions</label>
-        <label><input type="checkbox" checked={f.shuffleOptions} onChange={set("shuffleOptions")} disabled={locked} /> Shuffle options</label>
-        <label><input type="checkbox" checked={f.lockOnHighRisk} onChange={set("lockOnHighRisk")} /> Lock attempt for review on high risk</label>
+
+      <div className="form-section">
+        <div className="form-section__title">Proctoring</div>
+        <label className="check"><input type="checkbox" checked={f.lockOnHighRisk} onChange={set("lockOnHighRisk")} /> Lock attempt for review on high risk</label>
+        <label className="check"><input type="checkbox" checked={f.strict} onChange={set("strict")} disabled={locked} /> Strict proctoring: auto-submit on tab switch, window switch or fullscreen exit</label>
+        <label>Monitoring policy (JSON)<textarea className="mono" rows={4} value={f.monitoringPolicy} onChange={set("monitoringPolicy")} disabled={locked} />{fieldError("monitoringPolicy")}</label>
       </div>
-      <label><input type="checkbox" checked={f.strict} onChange={set("strict")} disabled={locked} /> Strict proctoring: auto-submit on tab switch, window switch or fullscreen exit</label>
-      <label>Monitoring policy (JSON)<textarea rows={4} value={f.monitoringPolicy} onChange={set("monitoringPolicy")} disabled={locked} />{fieldError("monitoringPolicy")}</label>
+
       <ErrorMessage error={apiError} />
-      <div className="form-row">
-        <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save"}</Button>
+      <div className="form-actions">
         {onCancel && <Button variant="secondary" onClick={onCancel}>Cancel</Button>}
+        <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save"}</Button>
       </div>
     </form>
   );

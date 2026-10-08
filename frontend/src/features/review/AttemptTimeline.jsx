@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { reviewApi } from "../../api/reviewApi";
 import Button from "../../components/Button";
+import Icon from "../../components/Icon";
 import ErrorMessage from "../../components/ErrorMessage";
 import Loading from "../../components/Loading";
 import { formatDateTime } from "../../utils/formatting";
@@ -26,7 +27,7 @@ function AssignForm({ attemptId }) {
   return (
     <form onSubmit={submit} className="card form" aria-label="Assign reviewer">
       <label>Reviewer user ID<input value={reviewerId} onChange={(e) => setReviewerId(e.target.value)} /></label>
-      <Button type="submit" disabled={!reviewerId.trim()}>Assign reviewer</Button>
+      <Button type="submit" variant="secondary" disabled={!reviewerId.trim()} className="btn-block">Assign reviewer</Button>
       {msg && <p role="status">{msg}</p>}
       <ErrorMessage error={error} />
     </form>
@@ -64,51 +65,67 @@ export default function AttemptTimeline({ attemptId, canAssign = false, onBack }
 
   return (
     <section>
-      <div className="form-row">
-        <Button variant="secondary" onClick={onBack}>← Back to queue</Button>
-        <Button variant="secondary" onClick={exportAudit}>Export audit report</Button>
+      <div className="section-head">
+        <Button variant="ghost" onClick={onBack}><Icon name="back" /> Back to queue</Button>
+        <Button variant="secondary" onClick={exportAudit}><Icon name="download" /> Export audit report</Button>
       </div>
-      <h2>{data.attempt.studentName} — {data.attempt.examTitle}</h2>
-      <p>
-        Status <span className="badge">{data.attempt.status}</span>{" "}
-        Risk <span className="badge badge-warn">{data.riskLevel} ({data.riskScore})</span>{" "}
-        {chain && (
-          <span className={`badge ${chain.valid ? "badge-ok" : "badge-bad"}`} data-testid="chain-badge">
-            {chain.valid ? "Log chain verified" : `Log chain broken at ${chain.brokenAt}`}
-          </span>
-        )}
-      </p>
+      <div className="page-head page-head--tight">
+        <div>
+          <h2 className="review-title">{data.attempt.studentName} — {data.attempt.examTitle}</h2>
+          <p className="summary">
+            Status <span className="badge">{data.attempt.status}</span>{" "}
+            Risk <span className="badge badge-warn">{data.riskLevel} ({data.riskScore})</span>{" "}
+            {chain && (
+              <span className={`badge ${chain.valid ? "badge-ok" : "badge-bad"}`} data-testid="chain-badge">
+                {chain.valid ? "Log chain verified" : `Log chain broken at ${chain.brokenAt}`}
+              </span>
+            )}
+          </p>
+        </div>
+      </div>
       <p className="notice">The risk score is a review signal, not a verdict.</p>
       <ErrorMessage error={error} />
 
-      <h3>Why this was flagged</h3>
-      {data.reasons.length === 0 ? <p className="empty">No weighted events.</p> : <ul>{data.reasons.map((r) => <li key={r}>{r}</li>)}</ul>}
+      <div className="split split--spaced">
+        <div>
+          <div className="review-section">
+            <h3>Why this was flagged</h3>
+            {data.reasons.length === 0 ? <p className="empty">No weighted events.</p> : <ul className="plain-list">{data.reasons.map((r) => <li key={r}>{r}</li>)}</ul>}
+          </div>
 
-      <h3>Events</h3>
-      {data.events.length === 0 ? <p className="empty">No events recorded.</p> : (
-        <ol aria-label="Event timeline">
-          {data.events.map((e, i) => (
-            <li key={i}>
-              {formatDateTime(e.occurredAt)} — <strong>{e.eventType}</strong> ({e.source}, {e.severity}, +{e.weight})
-            </li>
-          ))}
-        </ol>
-      )}
+          <div className="review-section">
+            <h3>Events</h3>
+            {data.events.length === 0 ? <p className="empty">No events recorded.</p> : (
+              <ol aria-label="Event timeline" className="timeline">
+                {data.events.map((e, i) => (
+                  <li key={i}>
+                    <span className="timeline__meta">{formatDateTime(e.occurredAt)}</span> — <strong className="timeline__type">{e.eventType}</strong> <span className="timeline__meta">({e.source}, {e.severity}, +{e.weight})</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
 
-      <h3>Decisions</h3>
-      {data.decisions.length === 0 ? <p className="empty">No decisions yet.</p> : (
-        <ul>
-          {data.decisions.map((d) => (
-            <li key={d.id}>
-              <strong>{d.isAppeal ? "Appeal" : d.decision}</strong> by {d.reviewerName ?? "student"} — {d.reason}{" "}
-              <small>{formatDateTime(d.createdAt)}</small>
-            </li>
-          ))}
-        </ul>
-      )}
+          <div className="review-section">
+            <h3>Decisions</h3>
+            {data.decisions.length === 0 ? <p className="empty">No decisions yet.</p> : (
+              <ul className="plain-list">
+                {data.decisions.map((d) => (
+                  <li key={d.id} className="decision">
+                    <strong>{d.isAppeal ? "Appeal" : d.decision}</strong> by {d.reviewerName ?? "student"} — {d.reason}{" "}
+                    <small>{formatDateTime(d.createdAt)}</small>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
 
-      <DecisionForm attemptId={attemptId} onSaved={load} />
-      {canAssign && <AssignForm attemptId={attemptId} />}
+        <aside className="split__aside">
+          <DecisionForm attemptId={attemptId} onSaved={load} />
+          {canAssign && <AssignForm attemptId={attemptId} />}
+        </aside>
+      </div>
     </section>
   );
 }

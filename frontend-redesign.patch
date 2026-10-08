@@ -1,0 +1,1880 @@
+diff --git a/frontend/src/App.jsx b/frontend/src/App.jsx
+index 3a64fad..bd2797e 100644
+--- a/frontend/src/App.jsx
++++ b/frontend/src/App.jsx
+@@ -1,21 +1,33 @@
+ import { Link } from "react-router-dom";
+ import Button from "./components/Button";
++import Icon from "./components/Icon";
+ import NotificationBell from "./components/NotificationBell";
+ import { useAuth } from "./auth/useAuth";
+ import AppRoutes from "./router/routes";
+ import UnsupportedBrowserPage from "./pages/UnsupportedBrowserPage";
+ import { getBrowserSupport } from "./utils/browserSupport";
+ 
++const initials = (name = "") => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("") || "?";
++
+ function Header() {
+   const { isAuthenticated, user, logout } = useAuth();
+   return (
+     <header className="app-header">
+-      <Link to="/" className="brand">SafeExam</Link>
++      <Link to="/" className="brand">
++        <span className="brand__mark"><Icon name="shield" size={17} /></span>
++        SafeExam
++      </Link>
+       {isAuthenticated && (
+         <div className="header-right">
+           <NotificationBell />
+-          <span>{user.fullName} ({user.role.toLowerCase()})</span>
+-          <Button variant="secondary" onClick={logout}>Sign out</Button>
++          <div className="user-chip">
++            <span className="avatar" aria-hidden="true">{initials(user.fullName)}</span>
++            <span className="user-chip__text">
++              <span className="user-chip__name">{user.fullName}</span>
++              <span className="user-chip__role">{user.role.toLowerCase()}</span>
++            </span>
++          </div>
++          <Button variant="ghost" onClick={logout}>Sign out</Button>
+         </div>
+       )}
+     </header>
+diff --git a/frontend/src/components/Button.jsx b/frontend/src/components/Button.jsx
+index f88b2d0..159c4da 100644
+--- a/frontend/src/components/Button.jsx
++++ b/frontend/src/components/Button.jsx
+@@ -1,6 +1,6 @@
+-export default function Button({ variant = "primary", type = "button", children, ...rest }) {
++export default function Button({ variant = "primary", size, type = "button", className = "", children, ...rest }) {
+   return (
+-    <button type={type} className={`btn btn-${variant}`} {...rest}>
++    <button type={type} className={`btn btn-${variant}${size ? ` btn-${size}` : ""}${className ? ` ${className}` : ""}`} {...rest}>
+       {children}
+     </button>
+   );
+diff --git a/frontend/src/components/Icon.jsx b/frontend/src/components/Icon.jsx
+new file mode 100644
+index 0000000..6e38722
+--- /dev/null
++++ b/frontend/src/components/Icon.jsx
+@@ -0,0 +1,22 @@
++// Single icon set: 24px grid, 1.75 stroke, inherits currentColor. Decorative by default.
++const PATHS = {
++  shield: <><path d="M12 3 5 6v5c0 4.5 2.9 8.2 7 10 4.1-1.8 7-5.5 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-4" /></>,
++  bell: <><path d="M6 9a6 6 0 1 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z" /><path d="M10 19a2 2 0 0 0 4 0" /></>,
++  clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
++  plus: <path d="M12 5v14M5 12h14" />,
++  back: <path d="M19 12H5m6-6-6 6 6 6" />,
++  check: <path d="m5 12 5 5 9-10" />,
++  download: <path d="M12 4v11m-4-4 4 4 4-4M5 20h14" />,
++  logout: <><path d="M10 5H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h4" /><path d="M15 8l4 4-4 4M19 12H9" /></>,
++  inbox: <><path d="M4 13h4l1 3h6l1-3h4" /><path d="M5.5 5h13L21 13v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5l2.5-8Z" /></>,
++  exam: <><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 8h6M9 12h6M9 16h3" /></>,
++};
++
++export default function Icon({ name, size = 16, ...rest }) {
++  return (
++    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"
++      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" {...rest}>
++      {PATHS[name]}
++    </svg>
++  );
++}
+diff --git a/frontend/src/components/NotificationBell.jsx b/frontend/src/components/NotificationBell.jsx
+index 85b01ca..0ac4a03 100644
+--- a/frontend/src/components/NotificationBell.jsx
++++ b/frontend/src/components/NotificationBell.jsx
+@@ -1,5 +1,6 @@
+ import { useEffect, useState } from "react";
+ import { notificationApi } from "../api/notificationApi";
++import Icon from "./Icon";
+ 
+ export default function NotificationBell() {
+   const [items, setItems] = useState([]);
+@@ -23,16 +24,16 @@ export default function NotificationBell() {
+ 
+   return (
+     <div className="bell">
+-      <button type="button" className="btn btn-secondary" aria-label={`Notifications, ${unread} unread`} aria-expanded={open} onClick={() => setOpen(!open)}>
+-        🔔 {unread > 0 && <span className="badge badge-warn">{unread}</span>}
++      <button type="button" className="btn btn-ghost btn-icon" aria-label={`Notifications, ${unread} unread`} aria-expanded={open} onClick={() => setOpen(!open)}>
++        <Icon name="bell" size={18} /> {unread > 0 && <span className="badge">{unread}</span>}
+       </button>
+       {open && (
+         <div className="bell-panel" role="region" aria-label="Notifications">
+           {items.length === 0 && <p className="empty">No notifications.</p>}
+           {items.map((n) => (
+-            <div key={n.id} style={{ fontWeight: n.isRead ? 400 : 700 }}>
+-              <button type="button" className="btn btn-link" onClick={() => read(n)}>{n.title}</button>
+-              <div>{n.body}</div>
++            <div key={n.id} className="bell-panel__item" data-unread={!n.isRead}>
++              <button type="button" className="bell-panel__title" onClick={() => read(n)}>{n.title}</button>
++              <div className="bell-panel__body">{n.body}</div>
+             </div>
+           ))}
+         </div>
+diff --git a/frontend/src/components/Pagination.jsx b/frontend/src/components/Pagination.jsx
+index 3b78de9..222761e 100644
+--- a/frontend/src/components/Pagination.jsx
++++ b/frontend/src/components/Pagination.jsx
+@@ -3,10 +3,12 @@ import Button from "./Button";
+ export default function Pagination({ page, pageSize, total, onPage }) {
+   const pages = Math.max(1, Math.ceil(total / pageSize));
+   return (
+-    <nav aria-label="Pagination" className="form-row">
+-      <Button variant="secondary" disabled={page <= 1} onClick={() => onPage(page - 1)}>Previous</Button>
++    <nav aria-label="Pagination" className="pagination">
+       <span>Page {page} of {pages}</span>
+-      <Button variant="secondary" disabled={page >= pages} onClick={() => onPage(page + 1)}>Next</Button>
++      <div className="pagination__buttons">
++        <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => onPage(page - 1)}>Previous</Button>
++        <Button variant="secondary" size="sm" disabled={page >= pages} onClick={() => onPage(page + 1)}>Next</Button>
++      </div>
+     </nav>
+   );
+ }
+diff --git a/frontend/src/features/attempt/AppealForm.jsx b/frontend/src/features/attempt/AppealForm.jsx
+index 7b82bae..8163ee7 100644
+--- a/frontend/src/features/attempt/AppealForm.jsx
++++ b/frontend/src/features/attempt/AppealForm.jsx
+@@ -28,7 +28,7 @@ export default function AppealForm({ attemptId }) {
+       <label>Appeal reason<textarea value={reason} onChange={(e) => setReason(e.target.value)} /></label>
+       {localError && <div role="alert" className="error-message">{localError}</div>}
+       <ErrorMessage error={error} />
+-      <Button type="submit">Send appeal</Button>
++      <div><Button type="submit" size="sm">Send appeal</Button></div>
+     </form>
+   );
+ }
+diff --git a/frontend/src/features/attempt/CodingPane.jsx b/frontend/src/features/attempt/CodingPane.jsx
+index f136128..8ef93e4 100644
+--- a/frontend/src/features/attempt/CodingPane.jsx
++++ b/frontend/src/features/attempt/CodingPane.jsx
+@@ -65,33 +65,35 @@ export default function CodingPane({ question, attemptId, value, onChange }) {
+ 
+   return (
+     <div className="coding-pane">
+-      <p><small>Time limit {cfg.timeLimitMs} ms · Memory {cfg.memoryLimitMb} MB</small></p>
++      <p className="coding-meta">Time limit {cfg.timeLimitMs} ms · Memory {cfg.memoryLimitMb} MB</p>
+       {(cfg.samples || []).map((s, i) => (
+-        <div key={i} className="form-row">
+-          <div><strong>Sample input {i + 1}</strong><pre>{s.input}</pre></div>
+-          <div><strong>Sample output {i + 1}</strong><pre>{s.output}</pre></div>
++        <div key={i} className="samples">
++          <div><span className="sample-label">Sample input {i + 1}</span><pre>{s.input}</pre></div>
++          <div><span className="sample-label">Sample output {i + 1}</span><pre>{s.output}</pre></div>
+         </div>
+       ))}
+-      <label>Language
+-        <select value={lang} onChange={(e) => edit(e.target.value, src)} disabled={busy}>
+-          {langs.map((l) => <option key={l} value={l}>{LABEL[l] || l}</option>)}
+-        </select>
+-      </label>
++      <div className="coding-toolbar">
++        <label>Language
++          <select value={lang} onChange={(e) => edit(e.target.value, src)} disabled={busy}>
++            {langs.map((l) => <option key={l} value={l}>{LABEL[l] || l}</option>)}
++          </select>
++        </label>
++      </div>
+       <textarea
+-        aria-label="Code editor" spellCheck={false} autoCapitalize="off" autoCorrect="off" value={src}
++        aria-label="Code editor" className="code-editor" spellCheck={false} autoCapitalize="off" autoCorrect="off" value={src}
+         onChange={(e) => edit(lang, e.target.value)} onKeyDown={onKey} rows={18}
+-        style={{ width: "100%", fontFamily: "ui-monospace, Consolas, monospace", fontSize: 14, tabSize: 4, whiteSpace: "pre" }}
+       />
+-      <div className="form-row">
++      <div className="coding-actions">
+         <small>{bytes(src)} / {MAX_BYTES} bytes · Ctrl+Enter = Run</small>
+-        <button type="button" onClick={() => go("RUN")} disabled={busy}>Run samples</button>
+-        <button type="button" className="primary" onClick={() => go("SUBMIT")} disabled={busy}>Submit</button>
++        <button type="button" className="btn btn-secondary" onClick={() => go("RUN")} disabled={busy}>Run samples</button>
++        <button type="button" className="btn btn-primary" onClick={() => go("SUBMIT")} disabled={busy}>Submit</button>
+       </div>
+       {err && <div role="alert" className="error-message">{err}</div>}
+       {cur && <Result s={cur} />}
+       {hist.length > 0 && (
+         <details>
+           <summary>My submissions ({hist.length})</summary>
++          <div className="table-wrap">
+           <table>
+             <thead><tr><th>Time</th><th>Mode</th><th>Lang</th><th>Verdict</th><th>Passed</th><th>Score</th><th /></tr></thead>
+             <tbody>{hist.map((h) => (
+@@ -99,9 +101,10 @@ export default function CodingPane({ question, attemptId, value, onChange }) {
+                 <td>{new Date(h.createdAt).toLocaleTimeString()}</td><td>{h.mode}</td><td>{LABEL[h.language] || h.language}</td>
+                 <td>{h.status === "DONE" ? VERDICT[h.verdict] || h.verdict : h.status}</td>
+                 <td>{h.passed}/{h.total}</td><td>{h.mode === "SUBMIT" ? h.score : "—"}</td>
+-                <td><button type="button" onClick={async () => { const d = await codeApi.get(attemptId, h.id); setCur(d); edit(d.language, d.source ?? src); }}>Load</button></td>
++                <td><button type="button" className="btn btn-ghost btn-sm" onClick={async () => { const d = await codeApi.get(attemptId, h.id); setCur(d); edit(d.language, d.source ?? src); }}>Load</button></td>
+               </tr>))}</tbody>
+           </table>
++          </div>
+         </details>
+       )}
+     </div>
+@@ -112,8 +115,8 @@ function Result({ s }) {
+   if (s.status !== "DONE") return <p role="status" aria-live="polite">{s.status === "QUEUED" ? "In queue…" : "Judging…"}</p>;
+   const ok = s.verdict === "AC";
+   return (
+-    <div role="status" aria-live="polite" className="card">
+-      <h4 style={{ color: ok ? "green" : "crimson" }}>{VERDICT[s.verdict] || s.verdict}{s.failedTest ? ` on test ${s.failedTest}` : ""}</h4>
++    <div role="status" aria-live="polite" className={`verdict ${ok ? "verdict--ok" : "verdict--bad"}`}>
++      <h4>{VERDICT[s.verdict] || s.verdict}{s.failedTest ? ` on test ${s.failedTest}` : ""}</h4>
+       <p>
+         Passed {s.passed}/{s.total}
+         {s.mode === "SUBMIT" && <> · Score {s.score}/{s.maxScore}</>}
+@@ -122,6 +125,7 @@ function Result({ s }) {
+       </p>
+       {s.compileOutput && <pre>{s.compileOutput}</pre>}
+       {s.tests.length > 0 && (
++        <div className="table-wrap">
+         <table>
+           <thead><tr><th>#</th><th>Verdict</th><th>Time</th></tr></thead>
+           <tbody>{s.tests.map((t) => (
+@@ -130,6 +134,7 @@ function Result({ s }) {
+               {t.isSample && t.verdict !== "AC" && <td><pre>expected: {t.expected}{"\n"}got: {t.actual}</pre></td>}
+             </tr>))}</tbody>
+         </table>
++        </div>
+       )}
+     </div>
+   );
+diff --git a/frontend/src/features/attempt/ExamInstructions.jsx b/frontend/src/features/attempt/ExamInstructions.jsx
+index 1e210a7..5df69b2 100644
+--- a/frontend/src/features/attempt/ExamInstructions.jsx
++++ b/frontend/src/features/attempt/ExamInstructions.jsx
+@@ -6,16 +6,16 @@ import { formatDuration } from "../../utils/formatting";
+ export default function ExamInstructions({ exam, onStart, busy = false }) {
+   const [consent, setConsent] = useState(false);
+   return (
+-    <section className="card">
++    <section className="intro">
+       <h1>{exam.title}</h1>
+-      {exam.description && <p>{exam.description}</p>}
+-      <p>Duration: {formatDuration(exam.durationSeconds)}. The timer is controlled by the server and starts when you begin.</p>
++      {exam.description && <p className="intro__desc">{exam.description}</p>}
++      <p className="intro__note">Duration: {formatDuration(exam.durationSeconds)}. The timer is controlled by the server and starts when you begin.</p>
+       <ConsentNotice />
+-      <label>
++      <label className="check">
+         <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} /> I understand and agree to
+         exam monitoring.
+       </label>
+-      <div>
++      <div className="form-actions">
+         <Button disabled={!consent || busy} onClick={() => onStart(consent)}>
+           {busy ? "Starting…" : "Start exam"}
+         </Button>
+diff --git a/frontend/src/features/attempt/ExamShell.jsx b/frontend/src/features/attempt/ExamShell.jsx
+index bee48a6..0f6721b 100644
+--- a/frontend/src/features/attempt/ExamShell.jsx
++++ b/frontend/src/features/attempt/ExamShell.jsx
+@@ -146,7 +146,9 @@ function ExamShellInner({ attempt, policy, expiresAt, clock, onServerTime, finis
+           <div className="modal" role="dialog" aria-modal="true" aria-labelledby="fs-title">
+             <h2 id="fs-title">Enter fullscreen to continue</h2>
+             <p>This exam must run in fullscreen. Leaving fullscreen, switching tabs or switching windows will submit your exam automatically.</p>
+-            <button type="button" className="primary" onClick={() => monitoring.enterFullscreen()}>Enter fullscreen</button>
++            <div className="modal-actions">
++              <button type="button" className="btn btn-primary" onClick={() => monitoring.enterFullscreen()}>Enter fullscreen</button>
++            </div>
+           </div>
+         </div>
+       )}
+@@ -158,7 +160,7 @@ function ExamShellInner({ attempt, policy, expiresAt, clock, onServerTime, finis
+           <ol>
+             {questions.map((qq, i) => (
+               <li key={qq.id}>
+-                <button type="button" aria-current={i === index ? 'step' : undefined} aria-label={`Question ${i + 1}${isAnswered(answers[qq.id]) ? ', answered' : ''}`} onClick={() => go(i)}>
++                <button type="button" className={isAnswered(answers[qq.id]) ? 'is-answered' : undefined} aria-current={i === index ? 'step' : undefined} aria-label={`Question ${i + 1}${isAnswered(answers[qq.id]) ? ', answered' : ''}`} onClick={() => go(i)}>
+                   {i + 1}
+                 </button>
+               </li>
+@@ -177,9 +179,9 @@ function ExamShellInner({ attempt, policy, expiresAt, clock, onServerTime, finis
+       </div>
+ 
+       <footer className="exam-actions">
+-        <button type="button" onClick={() => go(index - 1)} disabled={index === 0}>Previous</button>
+-        <button type="button" onClick={() => go(index + 1)} disabled={index >= questions.length - 1}>Next</button>
+-        <button type="button" className="primary" onClick={() => setConfirming(true)}>Submit exam</button>
++        <button type="button" className="btn btn-secondary" onClick={() => go(index - 1)} disabled={index === 0}>Previous</button>
++        <button type="button" className="btn btn-secondary" onClick={() => go(index + 1)} disabled={index >= questions.length - 1}>Next</button>
++        <button type="button" className="btn btn-primary" onClick={() => setConfirming(true)}>Submit exam</button>
+       </footer>
+ 
+       {confirming && (
+@@ -187,11 +189,13 @@ function ExamShellInner({ attempt, policy, expiresAt, clock, onServerTime, finis
+           <div className="modal" role="dialog" aria-modal="true" aria-labelledby="submit-title">
+             <h2 id="submit-title">Submit your exam?</h2>
+             <p>You will not be able to change your answers after submitting.</p>
+-            {error && <p role="alert">{error}</p>}
+-            <button type="button" onClick={() => setConfirming(false)} disabled={submitting}>Cancel</button>
+-            <button type="button" ref={confirmBtn} className="primary" onClick={() => doSubmit()} disabled={submitting}>
+-              {submitting ? 'Submitting…' : 'Confirm submit'}
+-            </button>
++            {error && <p role="alert" className="error-message">{error}</p>}
++            <div className="modal-actions">
++              <button type="button" className="btn btn-secondary" onClick={() => setConfirming(false)} disabled={submitting}>Cancel</button>
++              <button type="button" ref={confirmBtn} className="btn btn-primary" onClick={() => doSubmit()} disabled={submitting}>
++                {submitting ? 'Submitting…' : 'Confirm submit'}
++              </button>
++            </div>
+           </div>
+         </div>
+       )}
+diff --git a/frontend/src/features/attempt/QuestionCard.jsx b/frontend/src/features/attempt/QuestionCard.jsx
+index 9e4b23f..d8c547e 100644
+--- a/frontend/src/features/attempt/QuestionCard.jsx
++++ b/frontend/src/features/attempt/QuestionCard.jsx
+@@ -5,28 +5,34 @@ export default function QuestionCard({ question, value, onChange, answerLabel =
+   const name = `q-${id}`;
+ 
+   return (
+-    <fieldset className="card">
+-      <legend>{prompt} <small>({marks} {marks === 1 ? "mark" : "marks"})</small></legend>
+-      {type === "MCQ_SINGLE" &&
+-        options.map((o) => (
+-          <label key={o.id} className="field">
+-            <span><input type="radio" name={name} checked={value === o.id} onChange={() => onChange(o.id)} /> {o.text}</span>
+-          </label>
+-        ))}
+-      {type === "MCQ_MULTIPLE" &&
+-        options.map((o) => {
+-          const list = Array.isArray(value) ? value : [];
+-          return (
+-            <label key={o.id} className="field">
+-              <span>
++    <fieldset className="question">
++      <legend className="question__prompt">{prompt} <small className="question__marks">({marks} {marks === 1 ? "mark" : "marks"})</small></legend>
++      {type === "MCQ_SINGLE" && (
++        <div className="choices">
++          {options.map((o) => (
++            <label key={o.id} className="choice">
++              <input type="radio" name={name} checked={value === o.id} onChange={() => onChange(o.id)} />
++              <span>{o.text}</span>
++            </label>
++          ))}
++        </div>
++      )}
++      {type === "MCQ_MULTIPLE" && (
++        <div className="choices">
++          {options.map((o) => {
++            const list = Array.isArray(value) ? value : [];
++            return (
++              <label key={o.id} className="choice">
+                 <input
+                   type="checkbox" checked={list.includes(o.id)}
+                   onChange={() => onChange(list.includes(o.id) ? list.filter((x) => x !== o.id) : [...list, o.id])}
+-                /> {o.text}
+-              </span>
+-            </label>
+-          );
+-        })}
++                />
++                <span>{o.text}</span>
++              </label>
++            );
++          })}
++        </div>
++      )}
+       {type === "CODING" && <CodingPane question={question} attemptId={attemptId} value={value} onChange={onChange} />}
+       {type === "SHORT_TEXT" && (
+         <textarea aria-label={answerLabel} maxLength={2000} rows={4} value={value ?? ""} onChange={(e) => onChange(e.target.value)} />
+diff --git a/frontend/src/features/attempt/StatusBar.jsx b/frontend/src/features/attempt/StatusBar.jsx
+index e6317c4..77c6234 100644
+--- a/frontend/src/features/attempt/StatusBar.jsx
++++ b/frontend/src/features/attempt/StatusBar.jsx
+@@ -1,4 +1,5 @@
+ import MonitoringBanner from '../monitoring/MonitoringBanner.jsx';
++import Icon from '../../components/Icon.jsx';
+ 
+ const SAVE_TEXT = {
+   IDLE: 'No changes yet', SAVING: 'Saving…', SAVED: 'All answers saved',
+@@ -14,13 +15,15 @@ export const formatTime = (s) => {
+ export default function StatusBar({ remainingSeconds, saveStatus, online, fullscreen, fullscreenRequired, onRetry }) {
+   return (
+     <header className="status-bar" aria-label="Exam status">
+-      <div role="timer" aria-label="Time remaining" className="status-bar__timer">{formatTime(remainingSeconds)}</div>
++      <div role="timer" aria-label="Time remaining" className="status-bar__timer"><Icon name="clock" size={17} />{formatTime(remainingSeconds)}</div>
+       <div role="status" aria-live="polite" className="status-bar__save" data-status={saveStatus}>
+         {SAVE_TEXT[saveStatus] || saveStatus}
+-        {saveStatus === 'FAILED' && <button type="button" onClick={onRetry}>Retry now</button>}
++        {saveStatus === 'FAILED' && <button type="button" className="btn btn-link" onClick={onRetry}>Retry now</button>}
++      </div>
++      <div className="status-bar__chips">
++        <div className="status-bar__net" data-on={online}>{online ? 'Online' : 'Offline'}</div>
++        {fullscreenRequired && <div className="status-bar__fs" data-on={fullscreen}>{fullscreen ? 'Fullscreen on' : 'Fullscreen off'}</div>}
+       </div>
+-      <div className="status-bar__net">{online ? 'Online' : 'Offline'}</div>
+-      {fullscreenRequired && <div className="status-bar__fs">{fullscreen ? 'Fullscreen on' : 'Fullscreen off'}</div>}
+       <MonitoringBanner />
+     </header>
+   );
+diff --git a/frontend/src/features/auth/LoginForm.jsx b/frontend/src/features/auth/LoginForm.jsx
+index bb60dfc..eccde90 100644
+--- a/frontend/src/features/auth/LoginForm.jsx
++++ b/frontend/src/features/auth/LoginForm.jsx
+@@ -29,8 +29,12 @@ export default function LoginForm({ onSuccess }) {
+   }
+ 
+   return (
+-    <form onSubmit={submit} className="card form">
+-      <h1>{mode === "login" ? "Sign in" : "Create account"}</h1>
++    <div className="auth-wrap">
++    <form onSubmit={submit} className="card auth-card form">
++      <div>
++        <h1>{mode === "login" ? "Sign in" : "Create account"}</h1>
++        <p className="lede">{mode === "login" ? "Continue to your exams." : "Create an account to get started."}</p>
++      </div>
+       {mode === "register" && (
+         <label>
+           Full name
+@@ -52,12 +56,15 @@ export default function LoginForm({ onSuccess }) {
+         />
+       </label>
+       <ErrorMessage error={error} />
+-      <Button type="submit" disabled={busy}>
++      <Button type="submit" disabled={busy} className="btn-block">
+         {busy ? "Please wait…" : mode === "login" ? "Sign in" : "Register"}
+       </Button>
+-      <Button variant="link" onClick={() => setMode(mode === "login" ? "register" : "login")}>
+-        {mode === "login" ? "Need an account? Register" : "Have an account? Sign in"}
+-      </Button>
+     </form>
++      <div className="auth-switch">
++        <Button variant="link" onClick={() => setMode(mode === "login" ? "register" : "login")}>
++          {mode === "login" ? "Need an account? Register" : "Have an account? Sign in"}
++        </Button>
++      </div>
++    </div>
+   );
+ }
+diff --git a/frontend/src/features/instructor/CodingAuthoring.jsx b/frontend/src/features/instructor/CodingAuthoring.jsx
+index f8f5b57..fc66e3c 100644
+--- a/frontend/src/features/instructor/CodingAuthoring.jsx
++++ b/frontend/src/features/instructor/CodingAuthoring.jsx
+@@ -15,18 +15,18 @@ export function CodingConfigFields({ value: c, onChange }) {
+   const set = (k, v) => onChange({ ...c, [k]: v });
+   const toggle = (l) => set("languages", c.languages.includes(l) ? c.languages.filter((x) => x !== l) : [...c.languages, l]);
+   return (
+-    <fieldset>
+-      <legend>Judge settings</legend>
+-      <div className="form-row">
++    <fieldset className="form-section">
++      <legend className="form-section__title">Judge settings</legend>
++      <div className="grid-2">
+         <label>Time limit (ms)<input type="number" min="100" max="10000" value={c.timeLimitMs} onChange={(e) => set("timeLimitMs", e.target.value)} /></label>
+         <label>Memory (MB)<input type="number" min="16" max="1024" value={c.memoryLimitMb} onChange={(e) => set("memoryLimitMb", e.target.value)} /></label>
+       </div>
+-      <div className="form-row">
++      <div className="row row-lg">
+         {LANGS.map(([id, label]) => (
+-          <label key={id}><input type="checkbox" checked={c.languages.includes(id)} onChange={() => toggle(id)} /> {label}</label>
++          <label key={id} className="check"><input type="checkbox" checked={c.languages.includes(id)} onChange={() => toggle(id)} /> {label}</label>
+         ))}
+       </div>
+-      <div className="form-row">
++      <div className="grid-3">
+         <label>Checker
+           <select value={c.checker} onChange={(e) => set("checker", e.target.value)}>
+             <option value="TOKENS">Tokens (ignore whitespace)</option><option value="LINES">Lines (exact spacing)</option><option value="FLOAT">Float (tolerance)</option>
+@@ -69,23 +69,25 @@ export function CodingTestsPanel({ questionId }) {
+   }
+ 
+   return (
+-    <fieldset aria-label="Test cases">
+-      <legend>Test cases ({rows.length}) — need ≥1 sample and ≥1 hidden to publish</legend>
++    <fieldset aria-label="Test cases" className="form-section">
++      <legend className="form-section__title">Test cases ({rows.length}) — need ≥1 sample and ≥1 hidden to publish</legend>
++      <div className="table-wrap">
+       <table>
+-        <thead><tr><th>#</th><th>Type</th><th>Weight</th><th>Input</th><th>Output</th><th /></tr></thead>
++        <thead><tr><th>#</th><th>Type</th><th className="num">Weight</th><th>Input</th><th>Output</th><th /></tr></thead>
+         <tbody>{rows.map((t) => (
+           <tr key={t.id}>
+-            <td>{t.position}</td><td>{t.isSample ? "Sample" : "Hidden"}</td><td>{t.weight}</td>
++            <td>{t.position}</td><td><span className={`badge ${t.isSample ? "badge-info" : ""}`}>{t.isSample ? "Sample" : "Hidden"}</span></td><td className="num">{t.weight}</td>
+             <td><code>{t.inputPreview}</code> ({t.inputBytes} B)</td><td><code>{t.outputPreview}</code> ({t.outputBytes} B)</td>
+-            <td><button type="button" onClick={async () => { try { await codeApi.deleteTest(questionId, t.id); load(); } catch (e) { setErr(e); } }}>Delete</button></td>
++            <td><div className="row-actions"><button type="button" className="btn btn-danger btn-sm" onClick={async () => { try { await codeApi.deleteTest(questionId, t.id); load(); } catch (e) { setErr(e); } }}>Delete</button></div></td>
+           </tr>))}</tbody>
+       </table>
++      </div>
+       <label>Input<textarea rows={3} value={f.input} onChange={(e) => setF({ ...f, input: e.target.value })} /></label>
+       <label>Expected output<textarea rows={3} value={f.output} onChange={(e) => setF({ ...f, output: e.target.value })} /></label>
+       <div className="form-row">
+-        <label><input type="checkbox" checked={f.isSample} onChange={(e) => setF({ ...f, isSample: e.target.checked })} /> Sample (shown to students)</label>
+-        <label>Weight<input type="number" min="1" max="1000" value={f.weight} onChange={(e) => setF({ ...f, weight: e.target.value })} /></label>
+-        <button type="button" onClick={async () => { await add([{ input: f.input, output: f.output, isSample: f.isSample, weight: Number(f.weight) || 1 }]); setF({ ...f, input: "", output: "" }); }}>Add test</button>
++        <label className="check grow"><input type="checkbox" checked={f.isSample} onChange={(e) => setF({ ...f, isSample: e.target.checked })} /> Sample (shown to students)</label>
++        <label className="w-120">Weight<input type="number" min="1" max="1000" value={f.weight} onChange={(e) => setF({ ...f, weight: e.target.value })} /></label>
++        <button type="button" className="btn btn-secondary" onClick={async () => { await add([{ input: f.input, output: f.output, isSample: f.isSample, weight: Number(f.weight) || 1 }]); setF({ ...f, input: "", output: "" }); }}>Add test</button>
+       </div>
+       <div className="form-row">
+         <label>Bulk upload (.in/.out pairs) as
+diff --git a/frontend/src/features/instructor/CreateExamForm.jsx b/frontend/src/features/instructor/CreateExamForm.jsx
+index 2298334..71dd698 100644
+--- a/frontend/src/features/instructor/CreateExamForm.jsx
++++ b/frontend/src/features/instructor/CreateExamForm.jsx
+@@ -83,35 +83,48 @@ export default function CreateExamForm({ exam = null, onSaved, onCancel }) {
+     }
+   }
+ 
+-  const fieldError = (k) => errors[k] && <span role="alert" className="error-message">{errors[k]}</span>;
++  const fieldError = (k) => errors[k] && <span role="alert" className="field-error">{errors[k]}</span>;
+ 
+   return (
+-    <form onSubmit={submit} className="card form" aria-label={exam ? "Edit exam" : "Create exam"}>
++    <form onSubmit={submit} className="card form form-card" aria-label={exam ? "Edit exam" : "Create exam"}>
+       <h2>{exam ? "Edit exam" : "Create exam"}</h2>
+       {locked && <p className="notice">This exam is {exam.status.toLowerCase()}; timing, shuffle and monitoring fields are read-only.</p>}
+       <label>Title<input value={f.title} onChange={set("title")} />{fieldError("title")}</label>
+       <label>Description<textarea value={f.description} onChange={set("description")} /></label>
+-      <div className="form-row">
+-        <label>Duration (minutes)<input type="number" value={f.durationMinutes} onChange={set("durationMinutes")} disabled={locked} />{fieldError("durationMinutes")}</label>
+-        <label>Starts at<input type="datetime-local" value={f.startsAt} onChange={set("startsAt")} disabled={locked} /></label>
+-        <label>Ends at<input type="datetime-local" value={f.endsAt} onChange={set("endsAt")} disabled={locked} />{fieldError("endsAt")}</label>
++
++      <div className="form-section">
++        <div className="form-section__title">Schedule</div>
++        <div className="grid-3">
++          <label>Duration (minutes)<input type="number" value={f.durationMinutes} onChange={set("durationMinutes")} disabled={locked} />{fieldError("durationMinutes")}</label>
++          <label>Starts at<input type="datetime-local" value={f.startsAt} onChange={set("startsAt")} disabled={locked} /></label>
++          <label>Ends at<input type="datetime-local" value={f.endsAt} onChange={set("endsAt")} disabled={locked} />{fieldError("endsAt")}</label>
++        </div>
+       </div>
+-      <div className="form-row">
+-        <label>Max attempts<input type="number" value={f.maxAttempts} onChange={set("maxAttempts")} />{fieldError("maxAttempts")}</label>
+-        <label>Pass marks<input type="number" step="0.01" value={f.passMarks} onChange={set("passMarks")} /></label>
++
++      <div className="form-section">
++        <div className="form-section__title">Attempts and results</div>
++        <div className="grid-2">
++          <label>Max attempts<input type="number" value={f.maxAttempts} onChange={set("maxAttempts")} />{fieldError("maxAttempts")}</label>
++          <label>Pass marks<input type="number" step="0.01" value={f.passMarks} onChange={set("passMarks")} /></label>
++        </div>
++        <div className="grid-2">
++          <label className="check"><input type="checkbox" checked={f.showResult} onChange={set("showResult")} /> Show result to students</label>
++          <label className="check"><input type="checkbox" checked={f.shuffleQuestions} onChange={set("shuffleQuestions")} disabled={locked} /> Shuffle questions</label>
++          <label className="check"><input type="checkbox" checked={f.shuffleOptions} onChange={set("shuffleOptions")} disabled={locked} /> Shuffle options</label>
++        </div>
+       </div>
+-      <div className="form-row">
+-        <label><input type="checkbox" checked={f.showResult} onChange={set("showResult")} /> Show result to students</label>
+-        <label><input type="checkbox" checked={f.shuffleQuestions} onChange={set("shuffleQuestions")} disabled={locked} /> Shuffle questions</label>
+-        <label><input type="checkbox" checked={f.shuffleOptions} onChange={set("shuffleOptions")} disabled={locked} /> Shuffle options</label>
+-        <label><input type="checkbox" checked={f.lockOnHighRisk} onChange={set("lockOnHighRisk")} /> Lock attempt for review on high risk</label>
++
++      <div className="form-section">
++        <div className="form-section__title">Proctoring</div>
++        <label className="check"><input type="checkbox" checked={f.lockOnHighRisk} onChange={set("lockOnHighRisk")} /> Lock attempt for review on high risk</label>
++        <label className="check"><input type="checkbox" checked={f.strict} onChange={set("strict")} disabled={locked} /> Strict proctoring: auto-submit on tab switch, window switch or fullscreen exit</label>
++        <label>Monitoring policy (JSON)<textarea className="mono" rows={4} value={f.monitoringPolicy} onChange={set("monitoringPolicy")} disabled={locked} />{fieldError("monitoringPolicy")}</label>
+       </div>
+-      <label><input type="checkbox" checked={f.strict} onChange={set("strict")} disabled={locked} /> Strict proctoring: auto-submit on tab switch, window switch or fullscreen exit</label>
+-      <label>Monitoring policy (JSON)<textarea rows={4} value={f.monitoringPolicy} onChange={set("monitoringPolicy")} disabled={locked} />{fieldError("monitoringPolicy")}</label>
++
+       <ErrorMessage error={apiError} />
+-      <div className="form-row">
+-        <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save"}</Button>
++      <div className="form-actions">
+         {onCancel && <Button variant="secondary" onClick={onCancel}>Cancel</Button>}
++        <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save"}</Button>
+       </div>
+     </form>
+   );
+diff --git a/frontend/src/features/instructor/ExamList.jsx b/frontend/src/features/instructor/ExamList.jsx
+index f6adcec..4ecb746 100644
+--- a/frontend/src/features/instructor/ExamList.jsx
++++ b/frontend/src/features/instructor/ExamList.jsx
+@@ -11,6 +11,7 @@ import ResultsPanel from "./ResultsPanel";
+ 
+ const PAGE_SIZE = 10;
+ const STATUSES = ["", "DRAFT", "PUBLISHED", "ACTIVE", "CLOSED", "ARCHIVED"];
++const STATUS_TONE = { DRAFT: "", PUBLISHED: "badge-info", ACTIVE: "badge-ok", CLOSED: "badge-warn", ARCHIVED: "" };
+ const NEXT = { PUBLISHED: "ACTIVE", ACTIVE: "CLOSED", CLOSED: "ARCHIVED" };
+ 
+ export default function ExamList() {
+@@ -48,14 +49,16 @@ export default function ExamList() {
+ 
+   return (
+     <section>
+-      <div className="form-row">
++      <div className="section-head">
+         <h2>Exams</h2>
+-        <Button onClick={() => setPanel({ kind: "form", exam: null })}>Create exam</Button>
+-        <label className="field">Status
+-          <select value={status} onChange={(e) => { setPage(1); setStatus(e.target.value); }}>
+-            {STATUSES.map((s) => <option key={s} value={s}>{s || "All"}</option>)}
+-          </select>
+-        </label>
++        <div className="row">
++          <label className="field field-inline">Status
++            <select value={status} onChange={(e) => { setPage(1); setStatus(e.target.value); }}>
++              {STATUSES.map((s) => <option key={s} value={s}>{s || "All"}</option>)}
++            </select>
++          </label>
++          <Button onClick={() => setPanel({ kind: "form", exam: null })}>Create exam</Button>
++        </div>
+       </div>
+       <ErrorMessage error={error} />
+       {problems.length > 0 && (
+@@ -65,30 +68,34 @@ export default function ExamList() {
+         </div>
+       )}
+       {!data && !error && <Loading />}
+-      {data && data.items.length === 0 && <p className="empty">No exams yet. Create your first exam.</p>}
++      {data && data.items.length === 0 && <p className="empty card">No exams yet. Create your first exam.</p>}
+       {data && data.items.length > 0 && (
+         <>
++          <div className="table-wrap">
+           <table>
+-            <thead><tr><th>Title</th><th>Status</th><th>Duration</th><th>Window</th><th>Actions</th></tr></thead>
++            <thead><tr><th>Title</th><th>Status</th><th>Duration</th><th>Window</th><th className="num">Actions</th></tr></thead>
+             <tbody>
+               {data.items.map((e) => (
+                 <tr key={e.id}>
+-                  <td>{e.title}</td>
+-                  <td><span className="badge">{e.status}</span></td>
++                  <td className="cell-title exam-title-cell">{e.title}</td>
++                  <td><span className={`badge badge--dot ${STATUS_TONE[e.status] || ""}`}>{e.status}</span></td>
+                   <td>{formatDuration(e.durationSeconds)}</td>
+                   <td>{formatDateTime(e.startsAt)} → {formatDateTime(e.endsAt)}</td>
+-                  <td className="form-row">
+-                    <Button variant="secondary" onClick={() => setPanel({ kind: "form", exam: e })}>Edit</Button>
+-                    <Button variant="secondary" onClick={() => setPanel({ kind: "questions", exam: e })}>Questions</Button>
+-                    {e.status === "DRAFT" && <Button onClick={() => act(() => examApi.publishExam(e.id))}>Publish</Button>}
+-                    {e.status === "DRAFT" && <Button variant="danger" onClick={() => act(() => examApi.deleteExam(e.id))}>Delete</Button>}
+-                    {NEXT[e.status] && <Button variant="secondary" onClick={() => act(() => examApi.setStatus(e.id, NEXT[e.status]))}>Move to {NEXT[e.status]}</Button>}
+-                    {e.status !== "DRAFT" && <Button variant="secondary" onClick={() => setPanel({ kind: "results", exam: e })}>Results</Button>}
++                  <td>
++                    <div className="row-actions">
++                      <Button variant="ghost" size="sm" onClick={() => setPanel({ kind: "form", exam: e })}>Edit</Button>
++                      <Button variant="ghost" size="sm" onClick={() => setPanel({ kind: "questions", exam: e })}>Questions</Button>
++                      {e.status !== "DRAFT" && <Button variant="ghost" size="sm" onClick={() => setPanel({ kind: "results", exam: e })}>Results</Button>}
++                      {NEXT[e.status] && <Button variant="secondary" size="sm" onClick={() => act(() => examApi.setStatus(e.id, NEXT[e.status]))}>Move to {NEXT[e.status]}</Button>}
++                      {e.status === "DRAFT" && <Button size="sm" onClick={() => act(() => examApi.publishExam(e.id))}>Publish</Button>}
++                      {e.status === "DRAFT" && <Button variant="danger" size="sm" onClick={() => act(() => examApi.deleteExam(e.id))}>Delete</Button>}
++                    </div>
+                   </td>
+                 </tr>
+               ))}
+             </tbody>
+           </table>
++          </div>
+           <Pagination page={data.page} pageSize={data.pageSize} total={data.total} onPage={setPage} />
+         </>
+       )}
+diff --git a/frontend/src/features/instructor/ExamQuestionPicker.jsx b/frontend/src/features/instructor/ExamQuestionPicker.jsx
+index 8769faf..a4e705a 100644
+--- a/frontend/src/features/instructor/ExamQuestionPicker.jsx
++++ b/frontend/src/features/instructor/ExamQuestionPicker.jsx
+@@ -44,34 +44,38 @@ export default function ExamQuestionPicker({ exam, onClose }) {
+   const available = bank.filter((q) => !attachedIds.has(q.id));
+ 
+   return (
+-    <section className="card">
+-      <div className="form-row"><h3>Questions in “{exam.title}”</h3><Button variant="secondary" onClick={onClose}>Close</Button></div>
++    <section className="card drawer">
++      <div className="drawer-head"><h3>Questions in “{exam.title}”</h3><Button variant="secondary" size="sm" onClick={onClose}>Close</Button></div>
+       {!editable && <p className="notice">Questions can only be changed while the exam is a draft.</p>}
+       <ErrorMessage error={error} />
+       {attached?.length === 0 && <p className="empty">No questions attached.</p>}
+-      <ol>
++      {attached?.length > 0 && (
++      <ol className="q-list">
+         {(attached ?? []).map((a, i) => (
+           <li key={a.questionId}>
+-            {a.question.prompt} <span className="badge">{a.marks} marks</span>{" "}
++            <span>{a.question.prompt}</span> <span className="badge">{a.marks} marks</span>
+             {editable && (
+-              <>
+-                <Button variant="secondary" disabled={i === 0} onClick={() => move(i, -1)} aria-label={`Move up ${a.question.prompt}`}>↑</Button>{" "}
+-                <Button variant="secondary" disabled={i === attached.length - 1} onClick={() => move(i, 1)} aria-label={`Move down ${a.question.prompt}`}>↓</Button>{" "}
+-                <Button variant="danger" onClick={() => run(() => examApi.detachQuestion(exam.id, a.questionId))}>Detach</Button>
+-              </>
++              <div className="row-actions">
++                <Button variant="ghost" size="sm" disabled={i === 0} onClick={() => move(i, -1)} aria-label={`Move up ${a.question.prompt}`}>↑</Button>
++                <Button variant="ghost" size="sm" disabled={i === attached.length - 1} onClick={() => move(i, 1)} aria-label={`Move down ${a.question.prompt}`}>↓</Button>
++                <Button variant="danger" size="sm" onClick={() => run(() => examApi.detachQuestion(exam.id, a.questionId))}>Detach</Button>
++              </div>
+             )}
+           </li>
+         ))}
+       </ol>
++      )}
+       {editable && (
+         <>
+-          <h4>Add from question bank</h4>
++          <h4 className="subhead">Add from question bank</h4>
+           {available.length === 0 && <p className="empty">No more questions available.</p>}
+-          <ul>
++          {available.length > 0 && (
++          <ul className="q-list">
+             {available.map((q) => (
+-              <li key={q.id}>{q.prompt} <Button variant="secondary" onClick={() => run(() => examApi.attachQuestion(exam.id, { questionId: q.id }))}>Attach</Button></li>
++              <li key={q.id}><span>{q.prompt}</span> <Button variant="secondary" size="sm" onClick={() => run(() => examApi.attachQuestion(exam.id, { questionId: q.id }))}>Attach</Button></li>
+             ))}
+           </ul>
++          )}
+         </>
+       )}
+     </section>
+diff --git a/frontend/src/features/instructor/QuestionBank.jsx b/frontend/src/features/instructor/QuestionBank.jsx
+index 67775c1..7256653 100644
+--- a/frontend/src/features/instructor/QuestionBank.jsx
++++ b/frontend/src/features/instructor/QuestionBank.jsx
+@@ -38,29 +38,33 @@ export default function QuestionBank() {
+ 
+   return (
+     <section>
+-      <div className="form-row">
++      <div className="section-head">
+         <h2>Question bank</h2>
+         <Button onClick={() => setEditing(null)}>New question</Button>
+       </div>
+       <ErrorMessage error={error} />
+       {!data && !error && <Loading />}
+-      {data && data.items.length === 0 && <p className="empty">No questions yet.</p>}
++      {data && data.items.length === 0 && <p className="empty card">No questions yet.</p>}
+       {data && data.items.length > 0 && (
+         <>
++          <div className="table-wrap">
+           <table>
+-            <thead><tr><th>Type</th><th>Prompt</th><th>Marks</th><th>Actions</th></tr></thead>
++            <thead><tr><th>Type</th><th>Prompt</th><th className="num">Marks</th><th className="num">Actions</th></tr></thead>
+             <tbody>
+               {data.items.map((q) => (
+                 <tr key={q.id}>
+-                  <td>{q.questionType}</td><td>{q.prompt}</td><td>{q.marks}</td>
++                  <td><span className="badge">{q.questionType}</span></td><td className="cell-title">{q.prompt}</td><td className="num">{q.marks}</td>
+                   <td>
+-                    <Button variant="secondary" onClick={() => setEditing(q)}>Edit</Button>{" "}
+-                    <Button variant="danger" onClick={() => deactivate(q)}>Deactivate</Button>
++                    <div className="row-actions">
++                      <Button variant="ghost" size="sm" onClick={() => setEditing(q)}>Edit</Button>
++                      <Button variant="danger" size="sm" onClick={() => deactivate(q)}>Deactivate</Button>
++                    </div>
+                   </td>
+                 </tr>
+               ))}
+             </tbody>
+           </table>
++          </div>
+           <Pagination page={data.page} pageSize={data.pageSize} total={data.total} onPage={setPage} />
+         </>
+       )}
+diff --git a/frontend/src/features/instructor/QuestionEditor.jsx b/frontend/src/features/instructor/QuestionEditor.jsx
+index 46b0061..dde21d5 100644
+--- a/frontend/src/features/instructor/QuestionEditor.jsx
++++ b/frontend/src/features/instructor/QuestionEditor.jsx
+@@ -90,7 +90,7 @@ export default function QuestionEditor({ question = null, onSaved, onCancel }) {
+   }
+ 
+   return (
+-    <form onSubmit={submit} className="card form" aria-label="Question editor">
++    <form onSubmit={submit} className="card form form-card" aria-label="Question editor">
+       <h3>{current ? "Edit question" : "New question"}</h3>
+       <label>Type
+         <select value={f.type} onChange={(e) => changeType(e.target.value)} disabled={!!current}>
+@@ -99,10 +99,10 @@ export default function QuestionEditor({ question = null, onSaved, onCancel }) {
+       </label>
+       <label>Prompt<textarea value={f.prompt} onChange={(e) => setF({ ...f, prompt: e.target.value })} /></label>
+       {isMcq ? (
+-        <fieldset>
+-          <legend>Options (tick the correct {f.type === "MCQ_SINGLE" ? "one" : "ones"})</legend>
++        <fieldset className="form-section">
++          <legend className="form-section__title">Options (tick the correct {f.type === "MCQ_SINGLE" ? "one" : "ones"})</legend>
+           {f.options.map((o, i) => (
+-            <div key={o.id} className="form-row">
++            <div key={o.id} className="option-edit">
+               <input
+                 type={f.type === "MCQ_SINGLE" ? "radio" : "checkbox"}
+                 name="correct" aria-label={`Correct: option ${i + 1}`}
+@@ -110,10 +110,10 @@ export default function QuestionEditor({ question = null, onSaved, onCancel }) {
+                 onChange={() => toggleCorrect(o.id)}
+               />
+               <input aria-label={`Option ${i + 1}`} value={o.text} onChange={(e) => setOption(i, e.target.value)} />
+-              {f.options.length > 2 && <Button variant="secondary" onClick={() => removeOption(i)}>Remove</Button>}
++              {f.options.length > 2 && <Button variant="ghost" size="sm" onClick={() => removeOption(i)}>Remove</Button>}
+             </div>
+           ))}
+-          <Button variant="secondary" onClick={addOption}>Add option</Button>
++          <div><Button variant="secondary" size="sm" onClick={addOption}>Add option</Button></div>
+         </fieldset>
+       ) : isCoding ? (
+         <CodingConfigFields value={f.coding} onChange={(coding) => setF({ ...f, coding })} />
+@@ -122,18 +122,20 @@ export default function QuestionEditor({ question = null, onSaved, onCancel }) {
+           <textarea value={f.correct} onChange={(e) => setF({ ...f, correct: e.target.value })} />
+         </label>
+       )}
+-      {isCoding && (current ? <CodingTestsPanel questionId={current.id} /> : <p><small>Save the question first, then add test cases.</small></p>)}
+-      <div className="form-row">
+-        <label>Marks<input type="number" step="0.01" value={f.marks} onChange={(e) => setF({ ...f, marks: e.target.value })} /></label>
+-        <label>Negative marks<input type="number" step="0.01" value={f.negativeMarks} onChange={(e) => setF({ ...f, negativeMarks: e.target.value })} /></label>
++      {isCoding && (current ? <CodingTestsPanel questionId={current.id} /> : <p className="field-hint">Save the question first, then add test cases.</p>)}
++      <div className="form-section">
++        <div className="grid-2">
++          <label>Marks<input type="number" step="0.01" value={f.marks} onChange={(e) => setF({ ...f, marks: e.target.value })} /></label>
++          <label>Negative marks<input type="number" step="0.01" value={f.negativeMarks} onChange={(e) => setF({ ...f, negativeMarks: e.target.value })} /></label>
++        </div>
++        <label>Explanation (hidden during exam)<textarea value={f.explanation} onChange={(e) => setF({ ...f, explanation: e.target.value })} /></label>
+       </div>
+-      <label>Explanation (hidden during exam)<textarea value={f.explanation} onChange={(e) => setF({ ...f, explanation: e.target.value })} /></label>
+       {localError && <div role="alert" className="error-message">{localError}</div>}
+       <ErrorMessage error={error} />
+-      <div className="form-row">
+-        <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save question"}</Button>
+-        {isCoding && current && <Button variant="secondary" onClick={() => onSaved?.(current)}>Done</Button>}
++      <div className="form-actions">
+         {onCancel && <Button variant="secondary" onClick={onCancel}>Cancel</Button>}
++        {isCoding && current && <Button variant="secondary" onClick={() => onSaved?.(current)}>Done</Button>}
++        <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save question"}</Button>
+       </div>
+     </form>
+   );
+diff --git a/frontend/src/features/instructor/ResultsPanel.jsx b/frontend/src/features/instructor/ResultsPanel.jsx
+index 19ab33a..55ff91d 100644
+--- a/frontend/src/features/instructor/ResultsPanel.jsx
++++ b/frontend/src/features/instructor/ResultsPanel.jsx
+@@ -27,25 +27,28 @@ export default function ResultsPanel({ exam, onClose }) {
+   }
+ 
+   return (
+-    <section className="card">
+-      <div className="form-row">
++    <section className="card drawer">
++      <div className="drawer-head">
+         <h3>Results — {exam.title}</h3>
+-        <Button onClick={publish}>Publish results</Button>
+-        <Button variant="secondary" onClick={download}>Download CSV</Button>
+-        <Button variant="secondary" onClick={onClose}>Close</Button>
++        <div className="row">
++          <Button variant="ghost" size="sm" onClick={onClose}>Close</Button>
++          <Button variant="secondary" size="sm" onClick={download}>Download CSV</Button>
++          <Button size="sm" onClick={publish}>Publish results</Button>
++        </div>
+       </div>
+       <ErrorMessage error={error} />
+       {!data && !error && <Loading />}
+       {data?.items.length === 0 && <p className="empty">No attempts yet.</p>}
+       {data?.items.length > 0 && (
++        <div className="table-wrap">
+         <table>
+-          <thead><tr><th>Student</th><th>Status</th><th>Marks</th><th>Passed</th><th>Risk</th><th>Published</th></tr></thead>
++          <thead><tr><th>Student</th><th>Status</th><th className="num">Marks</th><th>Passed</th><th>Risk</th><th>Published</th></tr></thead>
+           <tbody>
+             {data.items.map((r) => (
+               <tr key={r.attemptId}>
+                 <td>{r.studentName}<br /><small>{r.studentEmail}</small></td>
+                 <td>{r.attemptStatus}</td>
+-                <td>{r.totalMarks == null ? "—" : `${r.totalMarks} / ${r.maxMarks}`}</td>
++                <td className="num">{r.totalMarks == null ? "—" : `${r.totalMarks} / ${r.maxMarks}`}</td>
+                 <td>{r.passed == null ? "—" : r.passed ? "Yes" : "No"}</td>
+                 <td>{r.riskLevel}</td>
+                 <td>{r.published ? "Yes" : "No"}</td>
+@@ -53,6 +56,7 @@ export default function ResultsPanel({ exam, onClose }) {
+             ))}
+           </tbody>
+         </table>
++        </div>
+       )}
+     </section>
+   );
+diff --git a/frontend/src/features/monitoring/FullscreenBanner.jsx b/frontend/src/features/monitoring/FullscreenBanner.jsx
+index 27fcd00..5d95a33 100644
+--- a/frontend/src/features/monitoring/FullscreenBanner.jsx
++++ b/frontend/src/features/monitoring/FullscreenBanner.jsx
+@@ -8,7 +8,7 @@ export default function FullscreenBanner() {
+   return (
+     <div className="fullscreen-banner" role="status">
+       <span>This exam is meant to run in fullscreen.</span>
+-      <button type="button" onClick={() => enterFullscreen()}>Re-enter fullscreen</button>
++      <button type="button" className="btn btn-secondary btn-sm" onClick={() => enterFullscreen()}>Re-enter fullscreen</button>
+     </div>
+   );
+ }
+diff --git a/frontend/src/features/monitoring/WarningToast.jsx b/frontend/src/features/monitoring/WarningToast.jsx
+index 20b8606..bf5cae4 100644
+--- a/frontend/src/features/monitoring/WarningToast.jsx
++++ b/frontend/src/features/monitoring/WarningToast.jsx
+@@ -27,10 +27,12 @@ export default function WarningToast() {
+     <div className="warning-toast" role="alert">
+       <p>{lastWarning}</p>
+       <p className="warning-toast__count">{eventCount} {eventCount === 1 ? 'event' : 'events'} recorded</p>
+-      {lastWarningType === 'FULLSCREEN_EXIT' && !status.fullscreen && (
+-        <button type="button" onClick={() => enterFullscreen()}>Re-enter fullscreen</button>
+-      )}
+-      <button type="button" onClick={() => setVisible(false)} aria-label="Dismiss warning">Dismiss</button>
++      <div className="warning-toast__actions">
++        {lastWarningType === 'FULLSCREEN_EXIT' && !status.fullscreen && (
++          <button type="button" className="btn btn-primary btn-sm" onClick={() => enterFullscreen()}>Re-enter fullscreen</button>
++        )}
++        <button type="button" className="btn btn-secondary btn-sm" onClick={() => setVisible(false)} aria-label="Dismiss warning">Dismiss</button>
++      </div>
+     </div>
+   );
+ }
+diff --git a/frontend/src/features/review/AttemptTimeline.jsx b/frontend/src/features/review/AttemptTimeline.jsx
+index 4e0e71f..d3bac76 100644
+--- a/frontend/src/features/review/AttemptTimeline.jsx
++++ b/frontend/src/features/review/AttemptTimeline.jsx
+@@ -1,6 +1,7 @@
+ import { useCallback, useEffect, useState } from "react";
+ import { reviewApi } from "../../api/reviewApi";
+ import Button from "../../components/Button";
++import Icon from "../../components/Icon";
+ import ErrorMessage from "../../components/ErrorMessage";
+ import Loading from "../../components/Loading";
+ import { formatDateTime } from "../../utils/formatting";
+@@ -26,7 +27,7 @@ function AssignForm({ attemptId }) {
+   return (
+     <form onSubmit={submit} className="card form" aria-label="Assign reviewer">
+       <label>Reviewer user ID<input value={reviewerId} onChange={(e) => setReviewerId(e.target.value)} /></label>
+-      <Button type="submit" disabled={!reviewerId.trim()}>Assign reviewer</Button>
++      <Button type="submit" variant="secondary" disabled={!reviewerId.trim()} className="btn-block">Assign reviewer</Button>
+       {msg && <p role="status">{msg}</p>}
+       <ErrorMessage error={error} />
+     </form>
+@@ -64,51 +65,67 @@ export default function AttemptTimeline({ attemptId, canAssign = false, onBack }
+ 
+   return (
+     <section>
+-      <div className="form-row">
+-        <Button variant="secondary" onClick={onBack}>← Back to queue</Button>
+-        <Button variant="secondary" onClick={exportAudit}>Export audit report</Button>
++      <div className="section-head">
++        <Button variant="ghost" onClick={onBack}><Icon name="back" /> Back to queue</Button>
++        <Button variant="secondary" onClick={exportAudit}><Icon name="download" /> Export audit report</Button>
++      </div>
++      <div className="page-head page-head--tight">
++        <div>
++          <h2 className="review-title">{data.attempt.studentName} — {data.attempt.examTitle}</h2>
++          <p className="summary">
++            Status <span className="badge">{data.attempt.status}</span>{" "}
++            Risk <span className="badge badge-warn">{data.riskLevel} ({data.riskScore})</span>{" "}
++            {chain && (
++              <span className={`badge ${chain.valid ? "badge-ok" : "badge-bad"}`} data-testid="chain-badge">
++                {chain.valid ? "Log chain verified" : `Log chain broken at ${chain.brokenAt}`}
++              </span>
++            )}
++          </p>
++        </div>
+       </div>
+-      <h2>{data.attempt.studentName} — {data.attempt.examTitle}</h2>
+-      <p>
+-        Status <span className="badge">{data.attempt.status}</span>{" "}
+-        Risk <span className="badge badge-warn">{data.riskLevel} ({data.riskScore})</span>{" "}
+-        {chain && (
+-          <span className={`badge ${chain.valid ? "badge-ok" : "badge-bad"}`} data-testid="chain-badge">
+-            {chain.valid ? "Log chain verified" : `Log chain broken at ${chain.brokenAt}`}
+-          </span>
+-        )}
+-      </p>
+       <p className="notice">The risk score is a review signal, not a verdict.</p>
+       <ErrorMessage error={error} />
+ 
+-      <h3>Why this was flagged</h3>
+-      {data.reasons.length === 0 ? <p className="empty">No weighted events.</p> : <ul>{data.reasons.map((r) => <li key={r}>{r}</li>)}</ul>}
++      <div className="split split--spaced">
++        <div>
++          <div className="review-section">
++            <h3>Why this was flagged</h3>
++            {data.reasons.length === 0 ? <p className="empty">No weighted events.</p> : <ul className="plain-list">{data.reasons.map((r) => <li key={r}>{r}</li>)}</ul>}
++          </div>
+ 
+-      <h3>Events</h3>
+-      {data.events.length === 0 ? <p className="empty">No events recorded.</p> : (
+-        <ol aria-label="Event timeline">
+-          {data.events.map((e, i) => (
+-            <li key={i}>
+-              {formatDateTime(e.occurredAt)} — <strong>{e.eventType}</strong> ({e.source}, {e.severity}, +{e.weight})
+-            </li>
+-          ))}
+-        </ol>
+-      )}
++          <div className="review-section">
++            <h3>Events</h3>
++            {data.events.length === 0 ? <p className="empty">No events recorded.</p> : (
++              <ol aria-label="Event timeline" className="timeline">
++                {data.events.map((e, i) => (
++                  <li key={i}>
++                    <span className="timeline__meta">{formatDateTime(e.occurredAt)}</span> — <strong className="timeline__type">{e.eventType}</strong> <span className="timeline__meta">({e.source}, {e.severity}, +{e.weight})</span>
++                  </li>
++                ))}
++              </ol>
++            )}
++          </div>
+ 
+-      <h3>Decisions</h3>
+-      {data.decisions.length === 0 ? <p className="empty">No decisions yet.</p> : (
+-        <ul>
+-          {data.decisions.map((d) => (
+-            <li key={d.id}>
+-              <strong>{d.isAppeal ? "Appeal" : d.decision}</strong> by {d.reviewerName ?? "student"} — {d.reason}{" "}
+-              <small>{formatDateTime(d.createdAt)}</small>
+-            </li>
+-          ))}
+-        </ul>
+-      )}
++          <div className="review-section">
++            <h3>Decisions</h3>
++            {data.decisions.length === 0 ? <p className="empty">No decisions yet.</p> : (
++              <ul className="plain-list">
++                {data.decisions.map((d) => (
++                  <li key={d.id} className="decision">
++                    <strong>{d.isAppeal ? "Appeal" : d.decision}</strong> by {d.reviewerName ?? "student"} — {d.reason}{" "}
++                    <small>{formatDateTime(d.createdAt)}</small>
++                  </li>
++                ))}
++              </ul>
++            )}
++          </div>
++        </div>
+ 
+-      <DecisionForm attemptId={attemptId} onSaved={load} />
+-      {canAssign && <AssignForm attemptId={attemptId} />}
++        <aside className="split__aside">
++          <DecisionForm attemptId={attemptId} onSaved={load} />
++          {canAssign && <AssignForm attemptId={attemptId} />}
++        </aside>
++      </div>
+     </section>
+   );
+ }
+diff --git a/frontend/src/features/review/DecisionForm.jsx b/frontend/src/features/review/DecisionForm.jsx
+index 8c1f5eb..5c2808b 100644
+--- a/frontend/src/features/review/DecisionForm.jsx
++++ b/frontend/src/features/review/DecisionForm.jsx
+@@ -40,7 +40,7 @@ export default function DecisionForm({ attemptId, onSaved }) {
+       <label>Reason<textarea value={reason} onChange={(e) => setReason(e.target.value)} /></label>
+       {localError && <div role="alert" className="error-message">{localError}</div>}
+       <ErrorMessage error={error} />
+-      <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Record decision"}</Button>
++      <Button type="submit" disabled={busy} className="btn-block">{busy ? "Saving…" : "Record decision"}</Button>
+       <small>Decisions are append-only and cannot be edited later.</small>
+     </form>
+   );
+diff --git a/frontend/src/features/review/ReviewQueue.jsx b/frontend/src/features/review/ReviewQueue.jsx
+index 93957ee..0011338 100644
+--- a/frontend/src/features/review/ReviewQueue.jsx
++++ b/frontend/src/features/review/ReviewQueue.jsx
+@@ -29,8 +29,8 @@ export default function ReviewQueue({ onSelect }) {
+ 
+   return (
+     <section>
+-      <h2>Review queue</h2>
+-      <div className="form-row">
++      <div className="section-head"><h2>Review queue</h2></div>
++      <div className="toolbar">
+         <label className="field">Risk level
+           <select value={filters.riskLevel} onChange={set("riskLevel")}>
+             {LEVELS.map((l) => <option key={l} value={l}>{l || "All"}</option>)}
+@@ -45,22 +45,24 @@ export default function ReviewQueue({ onSelect }) {
+       </div>
+       <ErrorMessage error={error} />
+       {!data && !error && <Loading />}
+-      {data?.items.length === 0 && <p className="empty">Nothing to review.</p>}
++      {data?.items.length === 0 && <p className="empty card">Nothing to review.</p>}
+       {data?.items.length > 0 && (
+         <>
++          <div className="table-wrap">
+           <table>
+             <thead><tr><th>Student</th><th>Exam</th><th>Status</th><th>Risk</th><th>Last event</th><th /></tr></thead>
+             <tbody>
+               {data.items.map((a) => (
+                 <tr key={a.attemptId}>
+-                  <td>{a.studentName}</td><td>{a.examTitle}</td><td>{a.status}</td>
++                  <td className="cell-title">{a.studentName}</td><td>{a.examTitle}</td><td><span className="badge">{a.status}</span></td>
+                   <td><span className={`badge ${a.riskLevel === "HIGH_RISK" ? "badge-bad" : a.riskLevel === "NORMAL" ? "badge-ok" : "badge-warn"}`}>{a.riskLevel}</span></td>
+                   <td>{formatDateTime(a.lastEventAt)}</td>
+-                  <td><Button variant="secondary" onClick={() => onSelect(a.attemptId)}>Open</Button></td>
++                  <td><div className="row-actions"><Button variant="secondary" size="sm" onClick={() => onSelect(a.attemptId)}>Open</Button></div></td>
+                 </tr>
+               ))}
+             </tbody>
+           </table>
++          </div>
+           <Pagination page={data.page} pageSize={data.pageSize} total={data.total} onPage={setPage} />
+         </>
+       )}
+diff --git a/frontend/src/index.css b/frontend/src/index.css
+index 169b284..0da2cf3 100644
+--- a/frontend/src/index.css
++++ b/frontend/src/index.css
+@@ -1,42 +1,361 @@
+-:root { font-family: system-ui, sans-serif; color: #1a1a1a; background: #f5f6f8; }
+-body { margin: 0; }
+-main { max-width: 960px; margin: 0 auto; padding: 1rem; }
+-main.center { display: flex; justify-content: center; padding-top: 4rem; }
+-.app-header { display: flex; justify-content: space-between; align-items: center; padding: .6rem 1rem; background: #fff; border-bottom: 1px solid #ddd; }
+-.brand { font-weight: 700; text-decoration: none; color: #1a1a1a; }
+-.header-right { display: flex; gap: .75rem; align-items: center; }
+-.card { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+-.form { display: flex; flex-direction: column; gap: .75rem; min-width: 320px; }
+-.form label, label.field { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; }
+-.form-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+-input, select, textarea { padding: .45rem; border: 1px solid #bbb; border-radius: 4px; font: inherit; }
+-.btn { padding: .45rem .9rem; border-radius: 4px; border: 1px solid transparent; cursor: pointer; font: inherit; }
+-.btn:disabled { opacity: .5; cursor: not-allowed; }
+-.btn-primary { background: #2457d6; color: #fff; }
+-.btn-secondary { background: #fff; border-color: #bbb; }
+-.btn-danger { background: #c62828; color: #fff; }
+-.btn-link { background: none; color: #2457d6; text-decoration: underline; }
+-.error-message { background: #fdecea; color: #8a1c1c; padding: .5rem .75rem; border-radius: 4px; }
+-.notice { background: #e8f0fe; padding: .5rem .75rem; border-radius: 4px; }
+-.warning { background: #fff4e5; padding: .5rem .75rem; border-radius: 4px; }
+-.loading { padding: 1rem; color: #555; }
+-.empty { color: #666; padding: 1rem; text-align: center; }
+-table { width: 100%; border-collapse: collapse; background: #fff; }
+-th, td { text-align: left; padding: .4rem .5rem; border-bottom: 1px solid #eee; font-size: .9rem; }
+-.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; }
+-.modal { background: #fff; padding: 1.25rem; border-radius: 8px; max-width: 420px; width: 90%; }
+-.modal-actions { display: flex; gap: .5rem; justify-content: flex-end; margin-top: 1rem; }
+-.badge { display: inline-block; padding: .1rem .5rem; border-radius: 10px; font-size: .75rem; background: #e0e3e8; }
+-.badge-ok { background: #d7f0dd; } .badge-bad { background: #f8d7d7; } .badge-warn { background: #ffecc2; }
+-.exam-layout { display: grid; grid-template-columns: 1fr 220px; gap: 1rem; }
+-.exam-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+-.timer { font-size: 1.4rem; font-variant-numeric: tabular-nums; }
+-.timer-warn { color: #c62828; font-weight: 700; }
+-.nav-grid { display: flex; flex-wrap: wrap; gap: .35rem; }
+-.nav-btn { width: 2.2rem; height: 2.2rem; border: 1px solid #bbb; background: #fff; border-radius: 4px; cursor: pointer; }
+-.nav-btn.answered { background: #d7f0dd; } .nav-btn[aria-current="true"] { outline: 2px solid #2457d6; }
++/* ==========================================================================
++   SafeExam design system — light, warm-neutral, restrained accent.
++   Tokens → base → primitives → shell → pages. No logic lives here.
++   ========================================================================== */
++:root {
++  /* Surfaces */
++  --bg: #fbfaf8;
++  --surface: #ffffff;
++  --surface-2: #f7f5f1;
++  --surface-3: #f1eee8;
++  /* Lines */
++  --line: #ece9e3;
++  --line-strong: #ddd9d0;
++  /* Text */
++  --text: #23201c;
++  --text-2: #4a463f;
++  --muted: #6f6a62;
++  --faint: #9a958b;
++  /* Accent (warm orange) */
++  --accent: #e8833a;
++  --accent-hover: #d9742b;
++  --accent-active: #c76a25;
++  --accent-soft: #fdf1e6;
++  --accent-ring: rgba(232, 131, 58, .28);
++  --accent-ink: #a8531a;
++  /* Status */
++  --ok: #3b7a56;       --ok-soft: #eaf4ee;
++  --bad: #b3402d;      --bad-soft: #fbece8;
++  --warn: #946312;     --warn-soft: #fbf3df;
++  --info: #4a5f7a;     --info-soft: #eef2f7;
++  /* Shape & depth */
++  --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --r-xl: 16px;
++  --shadow-sm: 0 1px 2px rgba(35, 32, 28, .04);
++  --shadow-md: 0 1px 2px rgba(35, 32, 28, .04), 0 8px 24px rgba(35, 32, 28, .06);
++  --shadow-lg: 0 2px 4px rgba(35, 32, 28, .05), 0 20px 48px rgba(35, 32, 28, .12);
++  /* Spacing (4px grid) */
++  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px; --s-12: 48px;
++  /* Type */
++  --font: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
++  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, Menlo, monospace;
++  /* Motion */
++  --ease: cubic-bezier(.2, .7, .2, 1);
++  --t-fast: 140ms; --t-med: 200ms;
++  --control-h: 38px;
++  --topbar-h: 60px;
++
++  font-family: var(--font);
++  color: var(--text);
++  background: var(--bg);
++  font-size: 14px;
++  line-height: 1.5;
++  -webkit-font-smoothing: antialiased;
++  text-rendering: optimizeLegibility;
++}
++
++/* ---------- Base ---------- */
++*, *::before, *::after { box-sizing: border-box; }
++html { background: var(--bg); }
++body { margin: 0; min-height: 100vh; background: var(--bg); }
++h1, h2, h3, h4 { margin: 0; color: var(--text); letter-spacing: -.012em; font-weight: 600; }
++h1 { font-size: 24px; line-height: 1.25; letter-spacing: -.02em; }
++h2 { font-size: 18px; line-height: 1.3; }
++h3 { font-size: 15px; line-height: 1.35; }
++h4 { font-size: 14px; }
++p { margin: 0; }
++a { color: var(--accent-ink); text-underline-offset: 3px; text-decoration-color: rgba(168, 83, 26, .35); transition: color var(--t-fast) var(--ease); }
++a:hover { color: var(--accent-active); }
++small { font-size: 12.5px; color: var(--muted); }
++code, pre { font-family: var(--mono); font-size: 12.5px; }
++pre { margin: var(--s-2) 0 0; padding: var(--s-3); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); overflow: auto; white-space: pre-wrap; }
++code { background: var(--surface-2); padding: 1px 6px; border-radius: var(--r-sm); }
++ul, ol { margin: 0; padding-left: 1.2em; }
++hr { border: 0; border-top: 1px solid var(--line); margin: var(--s-6) 0; }
++details > summary { cursor: pointer; color: var(--text-2); font-weight: 500; border-radius: var(--r-sm); padding: 2px 0; }
++details > summary:hover { color: var(--text); }
++::selection { background: var(--accent-soft); }
++
++:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-sm); }
+ .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+-.tabs { display: flex; gap: .5rem; margin-bottom: 1rem; }
++.skip-link { position: absolute; left: -999px; }
++.skip-link:focus { left: var(--s-3); top: var(--s-3); background: var(--surface); padding: var(--s-2) var(--s-3); z-index: 100; border-radius: var(--r-md); box-shadow: var(--shadow-md); }
++
++/* ---------- Layout ---------- */
++main { max-width: 1080px; margin: 0 auto; padding: var(--s-10) var(--s-6) var(--s-12); }
++main.center { display: flex; justify-content: center; align-items: flex-start; padding-top: clamp(40px, 12vh, 120px); }
++main.narrow { max-width: 680px; }
++.stack { display: flex; flex-direction: column; gap: var(--s-4); }
++.stack-lg { display: flex; flex-direction: column; gap: var(--s-8); }
++.row { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
++.spacer { flex: 1; }
++.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4); }
++.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-4); }
++
++.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--s-4); flex-wrap: wrap; margin-bottom: var(--s-8); }
++.page-head p { color: var(--muted); margin-top: var(--s-1); }
++.page-head__actions { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
++.section-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); flex-wrap: wrap; margin-bottom: var(--s-4); }
++.section-head h2 { font-size: 16px; }
++
++/* ---------- App header ---------- */
++.app-header { position: sticky; top: 0; z-index: 20; height: var(--topbar-h); display: flex; justify-content: space-between; align-items: center; gap: var(--s-4); padding: 0 max(var(--s-6), calc((100vw - 1080px) / 2 + var(--s-6))); background: rgba(251, 250, 248, .92); backdrop-filter: saturate(1.2) blur(8px); border-bottom: 1px solid var(--line); }
++.brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 650; font-size: 15px; letter-spacing: -.01em; text-decoration: none; color: var(--text); }
++.brand:hover { color: var(--text); }
++.brand__mark { width: 28px; height: 28px; border-radius: 8px; background: var(--accent); color: #fff; display: grid; place-items: center; }
++.header-right { display: flex; gap: var(--s-2); align-items: center; }
++.user-chip { display: flex; align-items: center; gap: 10px; padding: 0 var(--s-3) 0 var(--s-1); height: 36px; margin-left: var(--s-1); }
++.avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--surface-3); color: var(--text-2); font-size: 11.5px; font-weight: 600; display: grid; place-items: center; flex: none; }
++.user-chip__text { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
++.user-chip__name { font-weight: 550; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
++.user-chip__role { font-size: 11.5px; color: var(--muted); text-transform: capitalize; }
++
++/* ---------- Buttons ---------- */
++.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: var(--control-h); padding: 0 var(--s-4); border-radius: var(--r-md); border: 1px solid transparent; font: inherit; font-weight: 550; font-size: 13.5px; line-height: 1; white-space: nowrap; cursor: pointer; text-decoration: none; user-select: none; transition: background-color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease), transform 80ms var(--ease); }
++.btn:active:not(:disabled) { transform: translateY(.5px); }
++.btn:disabled, .btn[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
++.btn-primary { background: var(--accent); color: #fff; box-shadow: 0 1px 0 rgba(255,255,255,.18) inset, var(--shadow-sm); }
++.btn-primary:hover:not(:disabled) { background: var(--accent-hover); color: #fff; }
++.btn-primary:active:not(:disabled) { background: var(--accent-active); }
++.btn-secondary { background: var(--surface); color: var(--text); border-color: var(--line-strong); box-shadow: var(--shadow-sm); }
++.btn-secondary:hover:not(:disabled) { background: var(--surface-2); border-color: #cfcabf; color: var(--text); }
++.btn-ghost, .btn-link { background: transparent; color: var(--text-2); }
++.btn-ghost:hover:not(:disabled), .btn-link:hover:not(:disabled) { background: var(--surface-3); color: var(--text); }
++.btn.btn-link { padding: 0 var(--s-2); height: 30px; color: var(--accent-ink); font-weight: 550; }
++.btn-link:hover:not(:disabled) { background: var(--accent-soft); color: var(--accent-active); }
++.btn-danger { background: var(--surface); color: var(--bad); border-color: #edcbc4; }
++.btn-danger:hover:not(:disabled) { background: var(--bad-soft); border-color: #e3b2a8; color: var(--bad); }
++.btn.btn-sm { height: 30px; padding: 0 var(--s-3); font-size: 12.5px; border-radius: var(--r-sm); }
++.btn.btn-icon { width: var(--control-h); padding: 0; position: relative; }
++.btn.btn-block { width: 100%; }
++.btn svg { flex: none; }
++
++/* ---------- Inputs ---------- */
++label { font-size: 13px; font-weight: 500; color: var(--text-2); }
++.form { display: flex; flex-direction: column; gap: var(--s-4); }
++.form label, label.field { display: flex; flex-direction: column; gap: 6px; }
++.form-row { display: flex; gap: var(--s-4); flex-wrap: wrap; align-items: flex-end; }
++.form-row > label { flex: 1 1 160px; }
++input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea { width: 100%; height: var(--control-h); padding: 0 var(--s-3); border: 1px solid var(--line-strong); border-radius: var(--r-md); background: var(--surface); color: var(--text); font: inherit; font-weight: 400; box-shadow: var(--shadow-sm); transition: border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease), background-color var(--t-fast) var(--ease); }
++textarea { height: auto; min-height: 88px; padding: var(--s-2) var(--s-3); line-height: 1.5; resize: vertical; }
++select { appearance: none; padding-right: 32px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236f6a62' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; cursor: pointer; }
++input::placeholder, textarea::placeholder { color: var(--faint); }
++input:hover:not(:disabled), select:hover:not(:disabled), textarea:hover:not(:disabled) { border-color: #cfcabf; }
++input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-ring); }
++input:disabled, select:disabled, textarea:disabled { background: var(--surface-2); color: var(--faint); cursor: not-allowed; }
++input[type="checkbox"], input[type="radio"] { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); flex: none; cursor: pointer; }
++input[type="file"] { font: inherit; font-size: 13px; color: var(--muted); }
++input[type="file"]::file-selector-button { font: inherit; font-weight: 550; font-size: 12.5px; margin-right: var(--s-3); height: 30px; padding: 0 var(--s-3); border: 1px solid var(--line-strong); border-radius: var(--r-sm); background: var(--surface); color: var(--text); cursor: pointer; }
++.check { display: flex !important; flex-direction: row !important; align-items: center; gap: 10px !important; font-weight: 450; color: var(--text); cursor: pointer; }
++.check:has(input:disabled) { color: var(--faint); cursor: not-allowed; }
++.field-hint { font-size: 12.5px; color: var(--muted); font-weight: 400; }
++.field-error { font-size: 12.5px; color: var(--bad); font-weight: 450; }
++fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
++legend { padding: 0; }
++
++/* ---------- Surfaces ---------- */
++.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--s-6); box-shadow: var(--shadow-sm); }
++.card + .card { margin-top: var(--s-4); }
++.card-flush { padding: 0; overflow: hidden; }
++.panel { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--s-4) var(--s-5); }
++.form-card { max-width: 760px; }
++.form-card > h2, .form-card > h3 { margin-bottom: var(--s-1); }
++.form-section { display: flex; flex-direction: column; gap: var(--s-4); padding-top: var(--s-5); border-top: 1px solid var(--line); }
++.form-section__title { font-size: 13px; font-weight: 600; color: var(--text); }
++.form-actions { display: flex; justify-content: flex-end; align-items: center; gap: var(--s-3); padding-top: var(--s-5); border-top: 1px solid var(--line); margin-top: var(--s-2); }
++
++/* ---------- Feedback ---------- */
++.error-message, .notice, .warning { display: block; padding: var(--s-3) var(--s-4); border-radius: var(--r-md); font-size: 13.5px; line-height: 1.5; border: 1px solid transparent; }
++.error-message { background: var(--bad-soft); color: #8e2f20; border-color: #f1d3cc; }
++.notice { background: var(--info-soft); color: #3d5068; border-color: #dde5ef; }
++.warning { background: var(--warn-soft); color: #7a510c; border-color: #f0e2b6; }
++.warning ul { margin-top: var(--s-2); }
++.loading { display: flex; align-items: center; gap: 10px; padding: var(--s-8) var(--s-4); color: var(--muted); justify-content: center; }
++.loading::before { content: ""; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--line-strong); border-top-color: var(--accent); animation: spin .8s linear infinite; }
++.empty { color: var(--muted); padding: var(--s-10) var(--s-4); text-align: center; font-size: 14px; }
++.empty-state { display: flex; flex-direction: column; align-items: center; gap: var(--s-2); text-align: center; padding: var(--s-12) var(--s-4); color: var(--muted); }
++.empty-state__icon { width: 40px; height: 40px; border-radius: 12px; background: var(--surface-3); color: var(--faint); display: grid; place-items: center; margin-bottom: var(--s-2); }
++.empty-state strong, .empty-state h3 { color: var(--text); font-weight: 600; }
++@keyframes spin { to { transform: rotate(360deg); } }
++
++/* ---------- Badges ---------- */
++.badge { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 var(--s-2); border-radius: 999px; font-size: 11.5px; font-weight: 550; letter-spacing: .01em; background: var(--surface-3); color: var(--text-2); white-space: nowrap; }
++.badge-ok { background: var(--ok-soft); color: var(--ok); }
++.badge-bad { background: var(--bad-soft); color: var(--bad); }
++.badge-warn { background: var(--warn-soft); color: var(--warn); }
++.badge-accent { background: var(--accent-soft); color: var(--accent-ink); }
++.badge-info { background: var(--info-soft); color: var(--info); }
++.badge--dot::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .85; }
++.btn-icon .badge { position: absolute; top: -5px; right: -5px; height: 18px; min-width: 18px; padding: 0 5px; justify-content: center; background: var(--accent); color: #fff; font-size: 10.5px; border: 2px solid var(--bg); }
++
++/* ---------- Tabs ---------- */
++.tabs { display: flex; gap: var(--s-6); border-bottom: 1px solid var(--line); margin-bottom: var(--s-6); }
++.tab { appearance: none; background: none; border: 0; padding: 0 0 var(--s-3); margin-bottom: -1px; font: inherit; font-weight: 550; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease); border-radius: 0; }
++.tab:hover { color: var(--text); }
++.tab[aria-current="page"] { color: var(--text); border-bottom-color: var(--accent); }
++
++/* ---------- Tables ---------- */
++.table-wrap { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); overflow-x: auto; box-shadow: var(--shadow-sm); }
++table { width: 100%; border-collapse: collapse; background: transparent; }
++th, td { text-align: left; padding: 14px var(--s-4); border-bottom: 1px solid var(--line); font-size: 13.5px; vertical-align: middle; }
++th { font-size: 12px; font-weight: 550; color: var(--muted); background: var(--surface-2); padding-top: 10px; padding-bottom: 10px; white-space: nowrap; }
++tbody tr { transition: background-color var(--t-fast) var(--ease); }
++tbody tr:hover { background: #fcfbf9; }
++tbody tr:last-child td { border-bottom: 0; }
++td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
++td.cell-title { font-weight: 550; color: var(--text); }
++td small { display: block; margin-top: 2px; }
++.row-actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--s-1); flex-wrap: nowrap; }
++.table-wrap + nav, .table-wrap + .pagination { margin-top: var(--s-4); }
++.pagination { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); color: var(--muted); font-size: 13px; }
++.pagination__buttons { display: flex; gap: var(--s-2); }
++
++/* ---------- Toolbar / filters ---------- */
++.toolbar { display: flex; align-items: flex-end; gap: var(--s-3); flex-wrap: wrap; margin-bottom: var(--s-4); }
++.toolbar label { flex: 0 1 200px; }
++.toolbar .spacer { flex: 1; }
++
++/* ---------- Modal ---------- */
++.modal-backdrop { position: fixed; inset: 0; z-index: 60; background: rgba(35, 32, 28, .38); display: flex; align-items: center; justify-content: center; padding: var(--s-4); animation: fade var(--t-med) var(--ease); }
++.modal { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--shadow-lg); padding: var(--s-6); width: 100%; max-width: 440px; animation: pop var(--t-med) var(--ease); }
++.modal h2 { font-size: 17px; margin-bottom: var(--s-2); }
++.modal p { color: var(--muted); }
++.modal .error-message, .modal [role="alert"] { margin-top: var(--s-3); }
++.modal-actions { display: flex; gap: var(--s-2); justify-content: flex-end; margin-top: var(--s-6); }
++@keyframes fade { from { opacity: 0; } }
++@keyframes pop { from { opacity: 0; transform: translateY(6px) scale(.985); } }
++
++/* ---------- Notifications ---------- */
+ .bell { position: relative; }
+-.bell-panel { position: absolute; right: 0; top: 2rem; width: 300px; background: #fff; border: 1px solid #ddd; border-radius: 6px; z-index: 5; max-height: 320px; overflow: auto; padding: .5rem; }
+-@media (max-width: 720px) { .exam-layout { grid-template-columns: 1fr; } }
++.bell-panel { position: absolute; right: 0; top: calc(100% + 8px); width: 340px; max-width: calc(100vw - 32px); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--shadow-lg); z-index: 30; max-height: 380px; overflow: auto; padding: var(--s-2); animation: pop var(--t-med) var(--ease); }
++.bell-panel__item { padding: var(--s-2) var(--s-3); border-radius: var(--r-md); transition: background-color var(--t-fast) var(--ease); }
++.bell-panel__item:hover { background: var(--surface-2); }
++.bell-panel__title { display: flex; align-items: center; gap: var(--s-2); width: 100%; padding: 0; border: 0; background: none; font: inherit; font-weight: 450; color: var(--text); text-align: left; cursor: pointer; }
++.bell-panel__item[data-unread="true"] .bell-panel__title { font-weight: 600; }
++.bell-panel__item[data-unread="true"] .bell-panel__title::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: none; }
++.bell-panel__body { color: var(--muted); font-size: 13px; margin-top: 2px; }
++.bell-panel .empty { padding: var(--s-6) var(--s-4); }
++
++/* ---------- Login ---------- */
++.auth-wrap { width: 100%; max-width: 400px; }
++.auth-brand { display: flex; flex-direction: column; align-items: center; gap: var(--s-3); margin-bottom: var(--s-6); text-align: center; }
++.auth-brand .brand__mark { width: 40px; height: 40px; border-radius: 12px; }
++.auth-brand p { color: var(--muted); }
++.auth-card { padding: var(--s-8); box-shadow: var(--shadow-md); }
++.auth-card h1 { font-size: 20px; }
++.auth-switch { text-align: center; margin-top: var(--s-5); color: var(--muted); font-size: 13.5px; }
++
++/* ---------- Student dashboard ---------- */
++.exam-list { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); overflow: hidden; }
++.exam-item { padding: var(--s-5) var(--s-6); }
++.exam-item + .exam-item { border-top: 1px solid var(--line); }
++.exam-item__main { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); flex-wrap: wrap; }
++.exam-item__title { font-size: 16px; font-weight: 600; }
++.exam-item__meta { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-4); margin-top: var(--s-1); color: var(--muted); font-size: 13px; }
++.attempts { margin-top: var(--s-4); display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); }
++.attempt-row { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-3) var(--s-4); padding: var(--s-3) var(--s-4); }
++.attempt-row + .attempt-row { border-top: 1px solid var(--line); }
++.attempt-row__date { color: var(--muted); font-size: 13px; }
++.attempt-row__result { margin-left: auto; font-weight: 550; display: flex; align-items: center; gap: var(--s-2); }
++.attempt-row details { flex-basis: 100%; }
++.attempt-row details[open] { padding-top: var(--s-1); }
++.attempt-row details .form { margin-top: var(--s-3); max-width: 480px; }
++
++/* ---------- Exam instructions / finish ---------- */
++.intro { max-width: 640px; margin: 0 auto; }
++.intro h1 { font-size: 26px; }
++.intro__desc { color: var(--text-2); margin-top: var(--s-2); font-size: 15px; line-height: 1.6; }
++.facts { display: flex; gap: var(--s-8); margin: var(--s-6) 0; padding: var(--s-4) 0; border-block: 1px solid var(--line); }
++.fact__label { font-size: 12px; color: var(--muted); }
++.fact__value { font-size: 15px; font-weight: 600; margin-top: 2px; }
++.intro__note { margin: var(--s-6) 0 var(--s-5); padding: var(--s-4) 0; border-block: 1px solid var(--line); color: var(--text-2); }
++.consent-notice { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--s-4) var(--s-5); margin-bottom: var(--s-5); }
++.consent-notice h2 { font-size: 14px; margin-bottom: var(--s-2); }
++.consent-notice p { color: var(--text-2); font-size: 13.5px; }
++.consent-notice p + p { margin-top: var(--s-2); color: var(--muted); }
++.finished { text-align: center; max-width: 440px; margin: 0 auto; padding-top: var(--s-8); display: flex; flex-direction: column; align-items: center; gap: var(--s-3); }
++.finished__icon { width: 48px; height: 48px; border-radius: 50%; background: var(--ok-soft); color: var(--ok); display: grid; place-items: center; margin-bottom: var(--s-2); }
++.finished p { color: var(--muted); }
++.finished .btn { margin-top: var(--s-4); }
++
++/* ---------- System check ---------- */
++.check-list { list-style: none; padding: 0; margin: var(--s-5) 0 0; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); overflow: hidden; }
++.check-item { display: flex; align-items: flex-start; gap: var(--s-3); padding: var(--s-4); }
++.check-item + .check-item { border-top: 1px solid var(--line); }
++.check-item__body { flex: 1; min-width: 0; }
++.check-item__label { font-weight: 550; }
++.check-item__msg { color: var(--muted); font-size: 13px; }
++.page-actions { display: flex; justify-content: flex-end; align-items: center; gap: var(--s-3); margin-top: var(--s-6); }
++
++/* ---------- Instructor ---------- */
++.exam-title-cell { max-width: 320px; }
++.q-list { list-style: none; padding: 0; margin: 0; border: 1px solid var(--line); border-radius: var(--r-md); }
++.q-list li { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-4); }
++.q-list li + li { border-top: 1px solid var(--line); }
++.q-list li > span:first-child { flex: 1; min-width: 0; }
++.option-edit { display: flex; align-items: center; gap: var(--s-3); }
++.option-edit input[type="text"], .option-edit input:not([type]) { flex: 1; }
++.drawer { margin-top: var(--s-6); }
++.drawer-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); margin-bottom: var(--s-4); flex-wrap: wrap; }
++
++/* ---------- Review ---------- */
++.split { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: var(--s-8); align-items: start; }
++.split__aside { position: sticky; top: calc(var(--topbar-h) + var(--s-6)); display: flex; flex-direction: column; gap: var(--s-4); }
++.split__aside .card + .card { margin-top: 0; }
++.summary { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; margin-top: var(--s-3); }
++.timeline { list-style: none; padding: 0; margin: 0; position: relative; }
++.timeline li { position: relative; padding: 0 0 var(--s-4) var(--s-6); }
++.timeline li::before { content: ""; position: absolute; left: 4px; top: 6px; width: 9px; height: 9px; border-radius: 50%; background: var(--surface); border: 2px solid var(--line-strong); }
++.timeline li::after { content: ""; position: absolute; left: 8px; top: 20px; bottom: -2px; width: 1px; background: var(--line); }
++.timeline li:last-child::after { display: none; }
++.timeline__type { font-weight: 600; }
++.timeline__meta { color: var(--muted); font-size: 12.5px; }
++.review-section + .review-section { margin-top: var(--s-8); }
++.review-section > h3 { margin-bottom: var(--s-3); }
++.plain-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--s-2); }
++.decision { padding: var(--s-3) var(--s-4); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); }
++
++/* ---------- Responsive ---------- */
++@media (max-width: 960px) {
++  .split { grid-template-columns: minmax(0, 1fr); }
++  .split__aside { position: static; }
++}
++@media (max-width: 720px) {
++  main { padding: var(--s-6) var(--s-4) var(--s-10); }
++  .app-header { padding: 0 var(--s-4); }
++  .user-chip__text { display: none; }
++  .user-chip { padding: 0; }
++  .page-head { margin-bottom: var(--s-6); }
++  .page-head__actions, .page-head__actions .btn { width: 100%; }
++  .grid-2, .grid-3 { grid-template-columns: minmax(0, 1fr); }
++  .card { padding: var(--s-5); }
++  .auth-card { padding: var(--s-6); }
++  .exam-item { padding: var(--s-4); }
++  .exam-item__main > .btn { width: 100%; }
++  .attempt-row__result { margin-left: 0; }
++  .facts { gap: var(--s-6); flex-wrap: wrap; }
++  .toolbar label { flex: 1 1 100%; }
++  .tabs { gap: var(--s-5); }
++  .btn { height: 42px; }
++  .btn.btn-sm { height: 34px; }
++  .row-actions { flex-wrap: wrap; justify-content: flex-start; }
++  .form-actions .btn, .modal-actions .btn, .page-actions .btn { flex: 1; }
++  .modal-actions { flex-direction: column-reverse; }
++  .pagination { flex-wrap: wrap; }
++}
++@media (prefers-reduced-motion: reduce) {
++  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
++}
++
++/* ---------- Small helpers ---------- */
++.lede { color: var(--muted); margin-top: var(--s-1); }
++.subhead { margin: var(--s-6) 0 var(--s-3); }
++textarea.mono { font-family: var(--mono); font-size: 12.5px; }
++.row-lg { gap: var(--s-5); }
++.grow { flex: 1 1 220px; }
++.w-120 { flex: 0 1 120px !important; }
++.page-head--tight { margin-bottom: var(--s-6); }
++.split--spaced { margin-top: var(--s-8); }
++.review-title { font-size: 20px; }
++.field-inline { flex-direction: row !important; align-items: center; gap: var(--s-2) !important; }
++.field-inline select { width: 160px; }
++.review-section .empty { padding: var(--s-2) 0; text-align: left; }
+diff --git a/frontend/src/monitoring.css b/frontend/src/monitoring.css
+index 5af4d21..f4ec4b8 100644
+--- a/frontend/src/monitoring.css
++++ b/frontend/src/monitoring.css
+@@ -1,26 +1,104 @@
+-/* Product B exam/monitoring styles — sirf B ki classes; A ke global styles ko nahi chhedte. */
+-.exam-shell, .system-check { --fg:#1b1f24; --muted:#5b6570; --line:#d0d7de; --accent:#2457d6; --warn:#9a6700; }
+-.exam-shell button { font: inherit; padding:.5rem .9rem; border:1px solid var(--line); border-radius:6px; background:#f6f8fa; cursor:pointer; }
+-.exam-shell button.primary, .system-check button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+-.exam-shell button:disabled { opacity:.55; cursor:not-allowed; }
+-.exam-shell :focus-visible, .system-check :focus-visible { outline:3px solid var(--accent); outline-offset:2px; }
+-.exam-shell .modal-backdrop { z-index:60; }
+-.skip-link { position:absolute; left:-999px; } .skip-link:focus { left:.5rem; top:.5rem; background:#fff; padding:.5rem; z-index:100; }
+-.exam-shell { max-width:70rem; margin:0 auto; padding:.75rem; }
+-.status-bar { display:flex; flex-wrap:wrap; gap:.5rem 1.25rem; align-items:center; padding:.5rem .75rem; border:1px solid var(--line); border-radius:8px; }
+-.status-bar__timer { font-variant-numeric:tabular-nums; font-weight:700; font-size:1.25rem; }
+-.monitoring-banner, .fullscreen-banner, .offline-banner, .a11y-notice { padding:.5rem .75rem; border-radius:6px; margin:.5rem 0; background:#fff8c5; color:#4d2d00; }
+-.offline-banner--escalated { background:#ffebe9; color:#82071e; }
+-.fullscreen-banner { display:flex; flex-wrap:wrap; gap:.75rem; align-items:center; }
+-.exam-body { display:flex; flex-wrap:wrap; gap:1rem; margin-top:.75rem; }
+-.question-nav ol { list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:.35rem; max-width:16rem; }
+-.question-nav button[aria-current="step"] { background:var(--accent); color:#fff; }
+-#exam-main { flex:1 1 20rem; min-width:0; }
+-.option { display:flex; gap:.5rem; padding:.4rem 0; }
+-.exam-no-select, .exam-no-select * { -webkit-user-select:none; user-select:none; }
+-.exam-no-select input, .exam-no-select textarea { -webkit-user-select:text; user-select:text; }
+-.exam-actions { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:1rem; }
+-.warning-toast { position:fixed; right:1rem; bottom:1rem; max-width:22rem; background:#fff; border:2px solid var(--warn); border-radius:8px; padding:.75rem 1rem; box-shadow:0 4px 16px rgba(0,0,0,.2); z-index:50; }
+-.warning-toast__count { color:var(--muted); font-size:.875rem; margin:.25rem 0 .5rem; }
+-.system-check li { margin:.4rem 0; } .system-check li[data-status="FAIL"] { color:#82071e; } .system-check li[data-status="WARN"] { color:var(--warn); }
+-.exam-shell--a11y { font-size:1.125rem; }
++/* Exam runtime UI: status bar, banners, body, footer actions, question, coding pane. Tokens come from index.css. */
++.exam-shell { max-width: 1080px; margin: 0 auto; padding: 0 var(--s-6) calc(var(--s-12) + 56px); }
++.exam-shell--a11y { font-size: 1.125rem; line-height: 1.65; }
++.exam-no-select, .exam-no-select * { -webkit-user-select: none; user-select: none; }
++.exam-no-select input, .exam-no-select textarea { -webkit-user-select: text; user-select: text; }
++.exam-shell .modal-backdrop { z-index: 60; }
++.exam-shell :focus-visible, .system-check :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
++.skip-link { position: absolute; left: -999px; }
++.skip-link:focus { left: var(--s-3); top: var(--s-3); background: var(--surface); padding: var(--s-2) var(--s-3); z-index: 100; border-radius: var(--r-md); box-shadow: var(--shadow-md); }
++
++.status-bar { position: sticky; top: var(--topbar-h); z-index: 15; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-4); padding: var(--s-3) 0; margin-bottom: var(--s-6); background: rgba(251, 250, 248, .94); backdrop-filter: saturate(1.2) blur(8px); border-bottom: 1px solid var(--line); }
++.status-bar__timer { display: inline-flex; align-items: center; gap: var(--s-2); height: 40px; padding: 0 var(--s-4); border-radius: var(--r-md); background: var(--surface); border: 1px solid var(--line-strong); font-variant-numeric: tabular-nums; font-weight: 650; font-size: 18px; letter-spacing: .01em; box-shadow: var(--shadow-sm); }
++.status-bar__timer svg { color: var(--muted); }
++.status-bar__save { display: inline-flex; align-items: center; gap: var(--s-2); font-size: 13px; color: var(--muted); }
++.status-bar__save::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--faint); flex: none; }
++.status-bar__save[data-status="SAVED"]::before { background: var(--ok); }
++.status-bar__save[data-status="SAVING"]::before { background: var(--accent); animation: pulse 1s ease-in-out infinite; }
++.status-bar__save[data-status="FAILED"]::before { background: var(--bad); }
++.status-bar__save[data-status="OFFLINE"]::before { background: var(--warn); }
++.status-bar__chips { margin-left: auto; display: flex; gap: var(--s-2); align-items: center; }
++.status-bar__net, .status-bar__fs { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px; font-size: 12px; font-weight: 550; background: var(--surface-3); color: var(--text-2); }
++.status-bar__net::before, .status-bar__fs::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
++.status-bar__net[data-on="false"]::before, .status-bar__fs[data-on="false"]::before { background: var(--warn); }
++.monitoring-banner { flex-basis: 100%; font-size: 12.5px; color: var(--muted); padding: 0; margin: 0; background: none; }
++.monitoring-banner--blocked { color: var(--bad); }
++@keyframes pulse { 50% { opacity: .35; } }
++
++/* ---------- Banners ---------- */
++.fullscreen-banner, .offline-banner, .a11y-notice { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-4); border-radius: var(--r-md); margin: 0 0 var(--s-3); font-size: 13.5px; background: var(--warn-soft); color: #7a510c; border: 1px solid #f0e2b6; }
++.fullscreen-banner span { flex: 1 1 auto; }
++.offline-banner--escalated { background: var(--bad-soft); color: #8e2f20; border-color: #f1d3cc; }
++.a11y-notice { background: var(--info-soft); color: #3d5068; border-color: #dde5ef; display: block; }
++
++.exam-body { display: flex; flex-wrap: wrap; gap: var(--s-8); align-items: flex-start; margin-top: var(--s-6); }
++#exam-main { flex: 1 1 22rem; min-width: 0; max-width: none; padding: 0; margin: 0; }
++#exam-main:focus { outline: none; }
++.question-position { font-size: 13px; font-weight: 550; color: var(--muted); margin-bottom: var(--s-3); }
++
++.question-nav { position: sticky; top: 168px; flex: 0 0 188px; }
++.question-nav ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
++.question-nav li { width: calc((100% - 18px) / 4); }
++.question-nav button { width: 100%; aspect-ratio: 1; min-height: 36px; padding: 0; display: grid; place-items: center; font: inherit; font-weight: 550; font-size: 13px; font-variant-numeric: tabular-nums; color: var(--text-2); background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-md); cursor: pointer; transition: background-color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease); }
++.question-nav button:hover { background: var(--surface-2); }
++.question-nav button.is-answered { background: var(--ok-soft); border-color: #cfe5d8; color: var(--ok); }
++.question-nav button[aria-current="step"] { background: var(--accent); border-color: var(--accent); color: #fff; }
++
++/* ---------- Question ---------- */
++.question { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--s-8); box-shadow: var(--shadow-sm); }
++.question__prompt { float: left; width: 100%; font-size: 17px; font-weight: 600; line-height: 1.5; letter-spacing: -.01em; padding: 0; margin-bottom: var(--s-5); max-width: 68ch; white-space: pre-wrap; }
++.question__marks { display: inline-block; margin-left: var(--s-2); font-size: 12px; font-weight: 550; color: var(--muted); white-space: nowrap; letter-spacing: 0; }
++.question > :not(legend) { clear: both; }
++.choices { display: flex; flex-direction: column; gap: var(--s-2); }
++.choice { display: flex !important; flex-direction: row !important; align-items: center; gap: var(--s-3) !important; padding: 12px var(--s-4); border: 1px solid var(--line-strong); border-radius: var(--r-md); background: var(--surface); font-size: 14.5px !important; font-weight: 450 !important; color: var(--text) !important; cursor: pointer; transition: background-color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease); }
++.choice:hover { background: var(--surface-2); }
++.choice:has(input:checked) { background: var(--accent-soft); border-color: var(--accent); }
++.choice:has(input:focus-visible) { box-shadow: 0 0 0 3px var(--accent-ring); }
++.option { display: flex; gap: .5rem; padding: .4rem 0; }
++
++.exam-actions { position: fixed; left: 0; right: 0; bottom: 0; z-index: 14; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); padding: var(--s-3) max(var(--s-6), calc((100vw - 1080px) / 2 + var(--s-6))); background: rgba(251, 250, 248, .96); backdrop-filter: saturate(1.2) blur(8px); border-top: 1px solid var(--line); }
++.exam-actions .btn-primary { margin-left: auto; }
++
++/* ---------- Warning toast ---------- */
++.warning-toast { position: fixed; right: var(--s-6); bottom: 84px; max-width: 360px; background: var(--surface); border: 1px solid #f0e2b6; border-left: 3px solid var(--warn); border-radius: var(--r-lg); padding: var(--s-4) var(--s-5); box-shadow: var(--shadow-lg); z-index: 50; display: flex; flex-direction: column; gap: var(--s-2); animation: pop var(--t-med) var(--ease); }
++.warning-toast__count { color: var(--muted); font-size: 12.5px; }
++.warning-toast__actions { display: flex; gap: var(--s-2); margin-top: var(--s-1); }
++
++/* ---------- Coding pane ---------- */
++.coding-pane { display: flex; flex-direction: column; gap: var(--s-4); }
++.coding-meta { font-size: 12.5px; color: var(--muted); }
++.samples { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); }
++.sample-label { display: block; font-size: 12px; font-weight: 550; color: var(--muted); }
++.coding-toolbar { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--s-4); flex-wrap: wrap; }
++.coding-toolbar label { flex: 0 1 200px; }
++.code-editor { width: 100%; min-height: 360px; padding: var(--s-4); font-family: var(--mono); font-size: 13.5px; line-height: 1.6; tab-size: 4; white-space: pre; background: #fdfcfa; }
++.coding-actions { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
++.coding-actions small { margin-right: auto; }
++.verdict { padding: var(--s-4) var(--s-5); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); }
++.verdict--ok { background: var(--ok-soft); border-color: #cfe5d8; }
++.verdict--bad { background: var(--bad-soft); border-color: #f1d3cc; }
++.verdict h4 { font-size: 14px; }
++.verdict--ok h4 { color: var(--ok); }
++.verdict--bad h4 { color: var(--bad); }
++.verdict p { color: var(--text-2); font-size: 13px; margin-top: 2px; }
++.verdict .table-wrap { margin-top: var(--s-3); }
++
++/* ---------- System check status ---------- */
++.system-check .check-item[data-status="FAIL"] .badge { background: var(--bad-soft); color: var(--bad); }
++.system-check .check-item[data-status="WARN"] .badge { background: var(--warn-soft); color: var(--warn); }
++.system-check .check-item[data-status="PASS"] .badge, .system-check .check-item[data-status="OK"] .badge { background: var(--ok-soft); color: var(--ok); }
++
++@media (max-width: 860px) {
++  .exam-body { gap: var(--s-4); }
++  .question-nav { position: static; flex-basis: 100%; }
++  .question-nav li { width: 40px; }
++  .question { padding: var(--s-5); }
++  .samples { grid-template-columns: minmax(0, 1fr); }
++}
++@media (max-width: 720px) {
++  .exam-shell { padding: 0 var(--s-4) calc(var(--s-10) + 56px); }
++  .status-bar__chips { margin-left: 0; }
++  .exam-actions { padding: var(--s-3) var(--s-4); }
++  .exam-actions .btn { flex: 1; }
++  .warning-toast { left: var(--s-4); right: var(--s-4); max-width: none; bottom: 80px; }
++}
+diff --git a/frontend/src/pages/ExamPage.jsx b/frontend/src/pages/ExamPage.jsx
+index 88e45fd..46ed12c 100644
+--- a/frontend/src/pages/ExamPage.jsx
++++ b/frontend/src/pages/ExamPage.jsx
+@@ -1,5 +1,6 @@
+ import { useEffect, useState } from "react";
+ import { Link, useParams } from "react-router-dom";
++import Icon from "../components/Icon";
+ import { attemptApi } from "../api/attemptApi";
+ import { examApi } from "../api/examApi";
+ import ErrorMessage from "../components/ErrorMessage";
+@@ -14,12 +15,15 @@ function Finished({ result }) {
+   const counted = result && result.answeredCount !== undefined;
+   return (
+     <main>
+-      <h1>Exam {counted ? "submitted" : "finished"}</h1>
+-      {counted
+-        ? <p>You answered {result.answeredCount} of {result.totalQuestions} questions.</p>
+-        : <p>Your attempt has been closed by the server{result?.status ? ` (${result.status})` : ""}.</p>}
+-      {result?.discardedLocalAnswers && <p>Answers saved on this device after the server closed the attempt were discarded.</p>}
+-      <Link to="/student">Back to dashboard</Link>
++      <div className="finished">
++        <span className="finished__icon"><Icon name="check" size={22} /></span>
++        <h1>Exam {counted ? "submitted" : "finished"}</h1>
++        {counted
++          ? <p>You answered {result.answeredCount} of {result.totalQuestions} questions.</p>
++          : <p>Your attempt has been closed by the server{result?.status ? ` (${result.status})` : ""}.</p>}
++        {result?.discardedLocalAnswers && <p>Answers saved on this device after the server closed the attempt were discarded.</p>}
++        <Link to="/student" className="btn btn-secondary">Back to dashboard</Link>
++      </div>
+     </main>
+   );
+ }
+diff --git a/frontend/src/pages/InstructorDashboard.jsx b/frontend/src/pages/InstructorDashboard.jsx
+index 50235f6..87e3395 100644
+--- a/frontend/src/pages/InstructorDashboard.jsx
++++ b/frontend/src/pages/InstructorDashboard.jsx
+@@ -1,5 +1,4 @@
+ import { useState } from "react";
+-import Button from "../components/Button";
+ import ExamList from "../features/instructor/ExamList";
+ import QuestionBank from "../features/instructor/QuestionBank";
+ 
+@@ -7,10 +6,12 @@ export default function InstructorDashboard() {
+   const [tab, setTab] = useState("exams");
+   return (
+     <main>
+-      <h1>Instructor dashboard</h1>
++      <div className="page-head">
++        <h1>Instructor dashboard</h1>
++      </div>
+       <div className="tabs">
+-        <Button variant={tab === "exams" ? "primary" : "secondary"} onClick={() => setTab("exams")}>Exams</Button>
+-        <Button variant={tab === "questions" ? "primary" : "secondary"} onClick={() => setTab("questions")}>Question bank</Button>
++        <button type="button" className="tab" aria-current={tab === "exams" ? "page" : undefined} onClick={() => setTab("exams")}>Exams</button>
++        <button type="button" className="tab" aria-current={tab === "questions" ? "page" : undefined} onClick={() => setTab("questions")}>Question bank</button>
+       </div>
+       {tab === "exams" ? <ExamList /> : <QuestionBank />}
+     </main>
+diff --git a/frontend/src/pages/NotFoundPage.jsx b/frontend/src/pages/NotFoundPage.jsx
+index 8d9b968..f4c0e21 100644
+--- a/frontend/src/pages/NotFoundPage.jsx
++++ b/frontend/src/pages/NotFoundPage.jsx
+@@ -3,9 +3,11 @@ import { Link } from "react-router-dom";
+ export default function NotFoundPage() {
+   return (
+     <main>
+-      <h1>Page not found</h1>
+-      <p>The page you are looking for does not exist.</p>
+-      <Link to="/">Go home</Link>
++      <div className="finished">
++        <h1>Page not found</h1>
++        <p>The page you are looking for does not exist.</p>
++        <Link to="/" className="btn btn-secondary">Go home</Link>
++      </div>
+     </main>
+   );
+ }
+diff --git a/frontend/src/pages/ReviewPage.jsx b/frontend/src/pages/ReviewPage.jsx
+index 025ae18..b6c8302 100644
+--- a/frontend/src/pages/ReviewPage.jsx
++++ b/frontend/src/pages/ReviewPage.jsx
+@@ -9,7 +9,9 @@ export default function ReviewPage() {
+   const canAssign = user.role === "INSTRUCTOR" || user.role === "ADMIN"; // reviewer assign nahi kar sakta
+   return (
+     <main>
+-      <h1>Review</h1>
++      <div className="page-head">
++        <h1>Review</h1>
++      </div>
+       {attemptId
+         ? <AttemptTimeline attemptId={attemptId} canAssign={canAssign} onBack={() => setAttemptId(null)} />
+         : <ReviewQueue onSelect={setAttemptId} />}
+diff --git a/frontend/src/pages/StudentDashboard.jsx b/frontend/src/pages/StudentDashboard.jsx
+index ac9c80f..d2a5ea9 100644
+--- a/frontend/src/pages/StudentDashboard.jsx
++++ b/frontend/src/pages/StudentDashboard.jsx
+@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
+ import { attemptApi } from "../api/attemptApi";
+ import { examApi } from "../api/examApi";
+ import Button from "../components/Button";
++import Icon from "../components/Icon";
+ import ErrorMessage from "../components/ErrorMessage";
+ import Loading from "../components/Loading";
+ import AppealForm from "../features/attempt/AppealForm";
+@@ -24,7 +25,7 @@ function ResultView({ attemptId }) {
+     return <span>Score: {state.result.totalMarks} / {state.result.maxMarks}{state.result.passed != null && (state.result.passed ? " — passed" : " — not passed")}</span>;
+   return (
+     <>
+-      <Button variant="secondary" onClick={load} disabled={state.loading}>View result</Button>
++      <Button variant="secondary" size="sm" onClick={load} disabled={state.loading}>View result</Button>
+       <ErrorMessage error={state.error} />
+     </>
+   );
+@@ -44,29 +45,56 @@ export default function StudentDashboard() {
+   if (!exams && !error) return <main><Loading /></main>;
+   return (
+     <main>
+-      <h1>My exams</h1>
++      <div className="page-head">
++        <div>
++          <h1>My exams</h1>
++          {exams && exams.length > 0 && <p>{exams.length} {exams.length === 1 ? "exam" : "exams"} available to you.</p>}
++        </div>
++      </div>
+       <ErrorMessage error={error} />
+-      {exams?.length === 0 && <p className="empty">No exams are available right now.</p>}
+-      {exams?.map((e) => {
+-        const mine = attempts.filter((a) => a.examId === e.id);
+-        const live = mine.some((a) => LIVE.includes(a.status));
+-        return (
+-          <section key={e.id} className="card">
+-            <h2>{e.title}</h2>
+-            <p>{formatDuration(e.durationSeconds)} · {formatDateTime(e.startsAt)} → {formatDateTime(e.endsAt)}</p>
+-            {(live || mine.length < e.maxAttempts) && (
+-              <Link to={`/exam/${e.id}`}>{live ? "Resume exam" : "Start exam"}</Link>
+-            )}
+-            {mine.filter((a) => !LIVE.includes(a.status)).map((a) => (
+-              <div key={a.id} className="form-row">
+-                <span className="badge">{a.status}</span> <span>{formatDateTime(a.submittedAt)}</span>
+-                <ResultView attemptId={a.id} />
+-                <details><summary>Appeal</summary><AppealForm attemptId={a.id} /></details>
+-              </div>
+-            ))}
+-          </section>
+-        );
+-      })}
++      {exams?.length === 0 && (
++        <div className="empty-state card">
++          <span className="empty-state__icon"><Icon name="exam" size={20} /></span>
++          <h3>No exams are available right now.</h3>
++          <p>When an instructor publishes an exam for you, it will show up here.</p>
++        </div>
++      )}
++      {exams?.length > 0 && (
++        <div className="exam-list">
++          {exams.map((e) => {
++            const mine = attempts.filter((a) => a.examId === e.id);
++            const live = mine.some((a) => LIVE.includes(a.status));
++            const past = mine.filter((a) => !LIVE.includes(a.status));
++            return (
++              <section key={e.id} className="exam-item">
++                <div className="exam-item__main">
++                  <div>
++                    <h2 className="exam-item__title">{e.title}</h2>
++                    <p className="exam-item__meta">
++                      <span>{formatDuration(e.durationSeconds)}</span>
++                      <span>{formatDateTime(e.startsAt)} → {formatDateTime(e.endsAt)}</span>
++                    </p>
++                  </div>
++                  {(live || mine.length < e.maxAttempts) && (
++                    <Link to={`/exam/${e.id}`} className="btn btn-primary">{live ? "Resume exam" : "Start exam"}</Link>
++                  )}
++                </div>
++                {past.length > 0 && (
++                  <div className="attempts">
++                    {past.map((a) => (
++                      <div key={a.id} className="attempt-row">
++                        <span className="badge">{a.status}</span> <span className="attempt-row__date">{formatDateTime(a.submittedAt)}</span>
++                        <span className="attempt-row__result"><ResultView attemptId={a.id} /></span>
++                        <details><summary>Appeal</summary><AppealForm attemptId={a.id} /></details>
++                      </div>
++                    ))}
++                  </div>
++                )}
++              </section>
++            );
++          })}
++        </div>
++      )}
+     </main>
+   );
+ }
+diff --git a/frontend/src/pages/SystemCheckPage.jsx b/frontend/src/pages/SystemCheckPage.jsx
+index 8d5d027..5237af9 100644
+--- a/frontend/src/pages/SystemCheckPage.jsx
++++ b/frontend/src/pages/SystemCheckPage.jsx
+@@ -15,19 +15,22 @@ export default function SystemCheckPage({ policy, onContinue, practice = false }
+   useEffect(() => { run(); }, [run]);
+ 
+   return (
+-    <main className="system-check">
++    <main className="system-check narrow">
+       <h1>{practice ? 'Practice system check' : 'System readiness check'}</h1>
+-      <p aria-live="polite">{running ? 'Checking your device…' : result ? (result.passed ? 'Your device is ready.' : 'Please fix the items marked FAIL.') : ''}</p>
+-      <ul>
++      <p aria-live="polite" className="lede">{running ? 'Checking your device…' : result ? (result.passed ? 'Your device is ready.' : 'Please fix the items marked FAIL.') : ''}</p>
++      <ul className="check-list">
+         {(result ? result.checks : []).map((c) => (
+-          <li key={c.id} data-status={c.status}>
+-            <strong>{c.status}</strong> — {c.label}: {c.message}
++          <li key={c.id} data-status={c.status} className="check-item">
++            <span className="badge">{c.status}</span>
++            <span className="check-item__body"><span className="check-item__label">{c.label}</span>: <span className="check-item__msg">{c.message}</span></span>
+           </li>
+         ))}
+       </ul>
+-      <button type="button" className="btn btn-secondary" onClick={run} disabled={running}>Run again</button>
+-      {' '}<Link to="/">Back</Link>
+-      {onContinue && <button type="button" className="primary" disabled={!result || !result.passed} onClick={onContinue}>Continue</button>}
++      <div className="page-actions">
++        <Link to="/" className="btn btn-ghost">Back</Link>
++        <button type="button" className="btn btn-secondary" onClick={run} disabled={running}>Run again</button>
++        {onContinue && <button type="button" className="btn btn-primary" disabled={!result || !result.passed} onClick={onContinue}>Continue</button>}
++      </div>
+     </main>
+   );
+ }
+diff --git a/frontend/src/pages/UnsupportedBrowserPage.jsx b/frontend/src/pages/UnsupportedBrowserPage.jsx
+index c0ebad5..d3b47b7 100644
+--- a/frontend/src/pages/UnsupportedBrowserPage.jsx
++++ b/frontend/src/pages/UnsupportedBrowserPage.jsx
+@@ -1,6 +1,6 @@
+ export default function UnsupportedBrowserPage({ support }) {
+   return (
+-    <main className="unsupported" role="alert">
++    <main className="unsupported narrow" role="alert">
+       <h1>Your browser is not supported</h1>
+       <p>
+         This exam needs features your browser does not have: {support.missing.filter((m) => m !== 'Fullscreen API').join(', ')}.

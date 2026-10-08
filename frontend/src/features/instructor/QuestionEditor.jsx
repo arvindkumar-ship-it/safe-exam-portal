@@ -90,7 +90,7 @@ export default function QuestionEditor({ question = null, onSaved, onCancel }) {
   }
 
   return (
-    <form onSubmit={submit} className="card form" aria-label="Question editor">
+    <form onSubmit={submit} className="card form form-card" aria-label="Question editor">
       <h3>{current ? "Edit question" : "New question"}</h3>
       <label>Type
         <select value={f.type} onChange={(e) => changeType(e.target.value)} disabled={!!current}>
@@ -99,10 +99,10 @@ export default function QuestionEditor({ question = null, onSaved, onCancel }) {
       </label>
       <label>Prompt<textarea value={f.prompt} onChange={(e) => setF({ ...f, prompt: e.target.value })} /></label>
       {isMcq ? (
-        <fieldset>
-          <legend>Options (tick the correct {f.type === "MCQ_SINGLE" ? "one" : "ones"})</legend>
+        <fieldset className="form-section">
+          <legend className="form-section__title">Options (tick the correct {f.type === "MCQ_SINGLE" ? "one" : "ones"})</legend>
           {f.options.map((o, i) => (
-            <div key={o.id} className="form-row">
+            <div key={o.id} className="option-edit">
               <input
                 type={f.type === "MCQ_SINGLE" ? "radio" : "checkbox"}
                 name="correct" aria-label={`Correct: option ${i + 1}`}
@@ -110,10 +110,10 @@ export default function QuestionEditor({ question = null, onSaved, onCancel }) {
                 onChange={() => toggleCorrect(o.id)}
               />
               <input aria-label={`Option ${i + 1}`} value={o.text} onChange={(e) => setOption(i, e.target.value)} />
-              {f.options.length > 2 && <Button variant="secondary" onClick={() => removeOption(i)}>Remove</Button>}
+              {f.options.length > 2 && <Button variant="ghost" size="sm" onClick={() => removeOption(i)}>Remove</Button>}
             </div>
           ))}
-          <Button variant="secondary" onClick={addOption}>Add option</Button>
+          <div><Button variant="secondary" size="sm" onClick={addOption}>Add option</Button></div>
         </fieldset>
       ) : isCoding ? (
         <CodingConfigFields value={f.coding} onChange={(coding) => setF({ ...f, coding })} />
@@ -122,18 +122,20 @@ export default function QuestionEditor({ question = null, onSaved, onCancel }) {
           <textarea value={f.correct} onChange={(e) => setF({ ...f, correct: e.target.value })} />
         </label>
       )}
-      {isCoding && (current ? <CodingTestsPanel questionId={current.id} /> : <p><small>Save the question first, then add test cases.</small></p>)}
-      <div className="form-row">
-        <label>Marks<input type="number" step="0.01" value={f.marks} onChange={(e) => setF({ ...f, marks: e.target.value })} /></label>
-        <label>Negative marks<input type="number" step="0.01" value={f.negativeMarks} onChange={(e) => setF({ ...f, negativeMarks: e.target.value })} /></label>
+      {isCoding && (current ? <CodingTestsPanel questionId={current.id} /> : <p className="field-hint">Save the question first, then add test cases.</p>)}
+      <div className="form-section">
+        <div className="grid-2">
+          <label>Marks<input type="number" step="0.01" value={f.marks} onChange={(e) => setF({ ...f, marks: e.target.value })} /></label>
+          <label>Negative marks<input type="number" step="0.01" value={f.negativeMarks} onChange={(e) => setF({ ...f, negativeMarks: e.target.value })} /></label>
+        </div>
+        <label>Explanation (hidden during exam)<textarea value={f.explanation} onChange={(e) => setF({ ...f, explanation: e.target.value })} /></label>
       </div>
-      <label>Explanation (hidden during exam)<textarea value={f.explanation} onChange={(e) => setF({ ...f, explanation: e.target.value })} /></label>
       {localError && <div role="alert" className="error-message">{localError}</div>}
       <ErrorMessage error={error} />
-      <div className="form-row">
-        <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save question"}</Button>
-        {isCoding && current && <Button variant="secondary" onClick={() => onSaved?.(current)}>Done</Button>}
+      <div className="form-actions">
         {onCancel && <Button variant="secondary" onClick={onCancel}>Cancel</Button>}
+        {isCoding && current && <Button variant="secondary" onClick={() => onSaved?.(current)}>Done</Button>}
+        <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save question"}</Button>
       </div>
     </form>
   );

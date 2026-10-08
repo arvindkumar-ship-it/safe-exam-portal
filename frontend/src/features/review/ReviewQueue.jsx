@@ -29,8 +29,8 @@ export default function ReviewQueue({ onSelect }) {
 
   return (
     <section>
-      <h2>Review queue</h2>
-      <div className="form-row">
+      <div className="section-head"><h2>Review queue</h2></div>
+      <div className="toolbar">
         <label className="field">Risk level
           <select value={filters.riskLevel} onChange={set("riskLevel")}>
             {LEVELS.map((l) => <option key={l} value={l}>{l || "All"}</option>)}
@@ -45,22 +45,24 @@ export default function ReviewQueue({ onSelect }) {
       </div>
       <ErrorMessage error={error} />
       {!data && !error && <Loading />}
-      {data?.items.length === 0 && <p className="empty">Nothing to review.</p>}
+      {data?.items.length === 0 && <p className="empty card">Nothing to review.</p>}
       {data?.items.length > 0 && (
         <>
+          <div className="table-wrap">
           <table>
             <thead><tr><th>Student</th><th>Exam</th><th>Status</th><th>Risk</th><th>Last event</th><th /></tr></thead>
             <tbody>
               {data.items.map((a) => (
                 <tr key={a.attemptId}>
-                  <td>{a.studentName}</td><td>{a.examTitle}</td><td>{a.status}</td>
+                  <td className="cell-title">{a.studentName}</td><td>{a.examTitle}</td><td><span className="badge">{a.status}</span></td>
                   <td><span className={`badge ${a.riskLevel === "HIGH_RISK" ? "badge-bad" : a.riskLevel === "NORMAL" ? "badge-ok" : "badge-warn"}`}>{a.riskLevel}</span></td>
                   <td>{formatDateTime(a.lastEventAt)}</td>
-                  <td><Button variant="secondary" onClick={() => onSelect(a.attemptId)}>Open</Button></td>
+                  <td><div className="row-actions"><Button variant="secondary" size="sm" onClick={() => onSelect(a.attemptId)}>Open</Button></div></td>
                 </tr>
               ))}
             </tbody>
           </table>
+          </div>
           <Pagination page={data.page} pageSize={data.pageSize} total={data.total} onPage={setPage} />
         </>
       )}

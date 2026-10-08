@@ -11,6 +11,7 @@ import ResultsPanel from "./ResultsPanel";
 
 const PAGE_SIZE = 10;
 const STATUSES = ["", "DRAFT", "PUBLISHED", "ACTIVE", "CLOSED", "ARCHIVED"];
+const STATUS_TONE = { DRAFT: "", PUBLISHED: "badge-info", ACTIVE: "badge-ok", CLOSED: "badge-warn", ARCHIVED: "" };
 const NEXT = { PUBLISHED: "ACTIVE", ACTIVE: "CLOSED", CLOSED: "ARCHIVED" };
 
 export default function ExamList() {
@@ -48,14 +49,16 @@ export default function ExamList() {
 
   return (
     <section>
-      <div className="form-row">
+      <div className="section-head">
         <h2>Exams</h2>
-        <Button onClick={() => setPanel({ kind: "form", exam: null })}>Create exam</Button>
-        <label className="field">Status
-          <select value={status} onChange={(e) => { setPage(1); setStatus(e.target.value); }}>
-            {STATUSES.map((s) => <option key={s} value={s}>{s || "All"}</option>)}
-          </select>
-        </label>
+        <div className="row">
+          <label className="field field-inline">Status
+            <select value={status} onChange={(e) => { setPage(1); setStatus(e.target.value); }}>
+              {STATUSES.map((s) => <option key={s} value={s}>{s || "All"}</option>)}
+            </select>
+          </label>
+          <Button onClick={() => setPanel({ kind: "form", exam: null })}>Create exam</Button>
+        </div>
       </div>
       <ErrorMessage error={error} />
       {problems.length > 0 && (
@@ -65,30 +68,34 @@ export default function ExamList() {
         </div>
       )}
       {!data && !error && <Loading />}
-      {data && data.items.length === 0 && <p className="empty">No exams yet. Create your first exam.</p>}
+      {data && data.items.length === 0 && <p className="empty card">No exams yet. Create your first exam.</p>}
       {data && data.items.length > 0 && (
         <>
+          <div className="table-wrap">
           <table>
-            <thead><tr><th>Title</th><th>Status</th><th>Duration</th><th>Window</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Title</th><th>Status</th><th>Duration</th><th>Window</th><th className="num">Actions</th></tr></thead>
             <tbody>
               {data.items.map((e) => (
                 <tr key={e.id}>
-                  <td>{e.title}</td>
-                  <td><span className="badge">{e.status}</span></td>
+                  <td className="cell-title exam-title-cell">{e.title}</td>
+                  <td><span className={`badge badge--dot ${STATUS_TONE[e.status] || ""}`}>{e.status}</span></td>
                   <td>{formatDuration(e.durationSeconds)}</td>
                   <td>{formatDateTime(e.startsAt)} → {formatDateTime(e.endsAt)}</td>
-                  <td className="form-row">
-                    <Button variant="secondary" onClick={() => setPanel({ kind: "form", exam: e })}>Edit</Button>
-                    <Button variant="secondary" onClick={() => setPanel({ kind: "questions", exam: e })}>Questions</Button>
-                    {e.status === "DRAFT" && <Button onClick={() => act(() => examApi.publishExam(e.id))}>Publish</Button>}
-                    {e.status === "DRAFT" && <Button variant="danger" onClick={() => act(() => examApi.deleteExam(e.id))}>Delete</Button>}
-                    {NEXT[e.status] && <Button variant="secondary" onClick={() => act(() => examApi.setStatus(e.id, NEXT[e.status]))}>Move to {NEXT[e.status]}</Button>}
-                    {e.status !== "DRAFT" && <Button variant="secondary" onClick={() => setPanel({ kind: "results", exam: e })}>Results</Button>}
+                  <td>
+                    <div className="row-actions">
+                      <Button variant="ghost" size="sm" onClick={() => setPanel({ kind: "form", exam: e })}>Edit</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setPanel({ kind: "questions", exam: e })}>Questions</Button>
+                      {e.status !== "DRAFT" && <Button variant="ghost" size="sm" onClick={() => setPanel({ kind: "results", exam: e })}>Results</Button>}
+                      {NEXT[e.status] && <Button variant="secondary" size="sm" onClick={() => act(() => examApi.setStatus(e.id, NEXT[e.status]))}>Move to {NEXT[e.status]}</Button>}
+                      {e.status === "DRAFT" && <Button size="sm" onClick={() => act(() => examApi.publishExam(e.id))}>Publish</Button>}
+                      {e.status === "DRAFT" && <Button variant="danger" size="sm" onClick={() => act(() => examApi.deleteExam(e.id))}>Delete</Button>}
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          </div>
           <Pagination page={data.page} pageSize={data.pageSize} total={data.total} onPage={setPage} />
         </>
       )}

@@ -8,7 +8,7 @@ export default function FullscreenBanner() {
   return (
     <div className="fullscreen-banner" role="status">
       <span>This exam is meant to run in fullscreen.</span>
-      <button type="button" onClick={() => enterFullscreen()}>Re-enter fullscreen</button>
+      <button type="button" className="btn btn-secondary btn-sm" onClick={() => enterFullscreen()}>Re-enter fullscreen</button>
     </div>
   );
 }

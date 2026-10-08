@@ -27,10 +27,12 @@ export default function WarningToast() {
     <div className="warning-toast" role="alert">
       <p>{lastWarning}</p>
       <p className="warning-toast__count">{eventCount} {eventCount === 1 ? 'event' : 'events'} recorded</p>
-      {lastWarningType === 'FULLSCREEN_EXIT' && !status.fullscreen && (
-        <button type="button" onClick={() => enterFullscreen()}>Re-enter fullscreen</button>
-      )}
-      <button type="button" onClick={() => setVisible(false)} aria-label="Dismiss warning">Dismiss</button>
+      <div className="warning-toast__actions">
+        {lastWarningType === 'FULLSCREEN_EXIT' && !status.fullscreen && (
+          <button type="button" className="btn btn-primary btn-sm" onClick={() => enterFullscreen()}>Re-enter fullscreen</button>
+        )}
+        <button type="button" className="btn btn-secondary btn-sm" onClick={() => setVisible(false)} aria-label="Dismiss warning">Dismiss</button>
+      </div>
     </div>
   );
 }

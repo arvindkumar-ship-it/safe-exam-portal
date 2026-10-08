@@ -9,7 +9,9 @@ export default function ReviewPage() {
   const canAssign = user.role === "INSTRUCTOR" || user.role === "ADMIN"; // reviewer assign nahi kar sakta
   return (
     <main>
-      <h1>Review</h1>
+      <div className="page-head">
+        <h1>Review</h1>
+      </div>
       {attemptId
         ? <AttemptTimeline attemptId={attemptId} canAssign={canAssign} onBack={() => setAttemptId(null)} />
         : <ReviewQueue onSelect={setAttemptId} />}

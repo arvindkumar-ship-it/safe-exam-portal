@@ -44,34 +44,38 @@ export default function ExamQuestionPicker({ exam, onClose }) {
   const available = bank.filter((q) => !attachedIds.has(q.id));
 
   return (
-    <section className="card">
-      <div className="form-row"><h3>Questions in “{exam.title}”</h3><Button variant="secondary" onClick={onClose}>Close</Button></div>
+    <section className="card drawer">
+      <div className="drawer-head"><h3>Questions in “{exam.title}”</h3><Button variant="secondary" size="sm" onClick={onClose}>Close</Button></div>
       {!editable && <p className="notice">Questions can only be changed while the exam is a draft.</p>}
       <ErrorMessage error={error} />
       {attached?.length === 0 && <p className="empty">No questions attached.</p>}
-      <ol>
+      {attached?.length > 0 && (
+      <ol className="q-list">
         {(attached ?? []).map((a, i) => (
           <li key={a.questionId}>
-            {a.question.prompt} <span className="badge">{a.marks} marks</span>{" "}
+            <span>{a.question.prompt}</span> <span className="badge">{a.marks} marks</span>
             {editable && (
-              <>
-                <Button variant="secondary" disabled={i === 0} onClick={() => move(i, -1)} aria-label={`Move up ${a.question.prompt}`}>↑</Button>{" "}
-                <Button variant="secondary" disabled={i === attached.length - 1} onClick={() => move(i, 1)} aria-label={`Move down ${a.question.prompt}`}>↓</Button>{" "}
-                <Button variant="danger" onClick={() => run(() => examApi.detachQuestion(exam.id, a.questionId))}>Detach</Button>
-              </>
+              <div className="row-actions">
+                <Button variant="ghost" size="sm" disabled={i === 0} onClick={() => move(i, -1)} aria-label={`Move up ${a.question.prompt}`}>↑</Button>
+                <Button variant="ghost" size="sm" disabled={i === attached.length - 1} onClick={() => move(i, 1)} aria-label={`Move down ${a.question.prompt}`}>↓</Button>
+                <Button variant="danger" size="sm" onClick={() => run(() => examApi.detachQuestion(exam.id, a.questionId))}>Detach</Button>
+              </div>
             )}
           </li>
         ))}
       </ol>
+      )}
       {editable && (
         <>
-          <h4>Add from question bank</h4>
+          <h4 className="subhead">Add from question bank</h4>
           {available.length === 0 && <p className="empty">No more questions available.</p>}
-          <ul>
+          {available.length > 0 && (
+          <ul className="q-list">
             {available.map((q) => (
-              <li key={q.id}>{q.prompt} <Button variant="secondary" onClick={() => run(() => examApi.attachQuestion(exam.id, { questionId: q.id }))}>Attach</Button></li>
+              <li key={q.id}><span>{q.prompt}</span> <Button variant="secondary" size="sm" onClick={() => run(() => examApi.attachQuestion(exam.id, { questionId: q.id }))}>Attach</Button></li>
             ))}
           </ul>
+          )}
         </>
       )}
     </section>
