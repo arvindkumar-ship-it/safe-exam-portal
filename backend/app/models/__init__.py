@@ -13,3 +13,5 @@ from app.models.security_event import SecurityEvent  # noqa: F401
 from app.models.audit_record import AuditRecord  # noqa: F401
 from app.models.notification import Notification  # noqa: F401
 from app.models.review import ReviewAssignment, ReviewDecision  # noqa: F401
+from app.models.coding_test import CodingTest  # noqa: F401
+from app.models.code_submission import CodeSubmission  # noqa: F401

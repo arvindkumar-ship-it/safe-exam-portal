@@ -3,7 +3,7 @@ from typing import Literal
 from pydantic import Field, field_validator
 from app.schemas.common import CamelModel
 
-QType = Literal["MCQ_SINGLE", "MCQ_MULTIPLE", "SHORT_TEXT"]
+QType = Literal["MCQ_SINGLE", "MCQ_MULTIPLE", "SHORT_TEXT", "CODING"]
 
 
 class QuestionCreateIn(CamelModel):
@@ -11,6 +11,7 @@ class QuestionCreateIn(CamelModel):
     prompt: str = Field(min_length=1)
     options: list[dict] | None = None
     correct_answer: object | None = None
+    coding: dict | None = None
     marks: Decimal = Field(gt=0, max_digits=6, decimal_places=2)
     negative_marks: Decimal = Field(Decimal("0"), ge=0, max_digits=6, decimal_places=2)
     explanation: str | None = None
@@ -27,6 +28,7 @@ class QuestionUpdateIn(CamelModel):
     prompt: str | None = Field(None, min_length=1)
     options: list[dict] | None = None
     correct_answer: object | None = None
+    coding: dict | None = None
     marks: Decimal | None = Field(None, gt=0, max_digits=6, decimal_places=2)
     negative_marks: Decimal | None = Field(None, ge=0, max_digits=6, decimal_places=2)
     explanation: str | None = None
@@ -35,5 +37,5 @@ class QuestionUpdateIn(CamelModel):
 def question_out(q) -> dict:
     """Instructor/admin view: correctAnswer ke saath."""
     return {"id": q.id, "questionType": q.question_type, "prompt": q.prompt, "options": q.options,
-            "correctAnswer": q.correct_answer, "marks": float(q.marks), "negativeMarks": float(q.negative_marks),
+            "correctAnswer": q.correct_answer, "coding": q.coding, "marks": float(q.marks), "negativeMarks": float(q.negative_marks),
             "explanation": q.explanation, "isActive": q.is_active, "version": q.version, "createdBy": q.created_by}

@@ -64,9 +64,13 @@ def reorder(db: Session, user, exam_id: str, question_ids: list[str]):
     return list_exam_questions(db, exam_id)
 
 
-def build_snapshot(question: Question) -> dict:
+def build_snapshot(question: Question, coding_extra: dict | None = None) -> dict:
     """Question ka poora rup us waqt ka (publish pe freeze)."""
-    return {"id": question.id, "type": question.question_type, "prompt": question.prompt,
+    snap = {"id": question.id, "type": question.question_type, "prompt": question.prompt,
             "options": question.options, "correctAnswer": question.correct_answer,
             "explanation": question.explanation, "marks": float(question.marks),
             "negativeMarks": float(question.negative_marks), "version": question.version}
+    if question.question_type == "CODING":
+        snap["coding"] = question.coding
+        snap.update(coding_extra or {})  # samples, testsHash, testCount, totalWeight
+    return snap

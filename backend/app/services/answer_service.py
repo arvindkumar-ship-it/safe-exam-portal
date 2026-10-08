@@ -1,6 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+from app.config import get_settings
 from app.errors import AppError
 from app.models.answer import Answer
 from app.models.exam_question import ExamQuestion
@@ -22,6 +23,12 @@ def validate_answer_value(snapshot: dict, value) -> None:
             raise bad
     elif t == "SHORT_TEXT":
         if not isinstance(value, str) or len(value) > 2000:
+            raise bad
+    elif t == "CODING":  # draft autosave: {"language","source"}; final marks code_submissions se aate hain
+        langs = set((snapshot.get("coding") or {}).get("languages", []))
+        if (not isinstance(value, dict) or set(value) != {"language", "source"} or value["language"] not in langs
+                or not isinstance(value["source"], str) or "\x00" in value["source"]
+                or len(value["source"].encode("utf-8")) > get_settings().CODE_MAX_SOURCE_BYTES):
             raise bad
     else:
         raise bad

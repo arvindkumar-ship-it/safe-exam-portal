@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from app.errors import AppError
 from app.services import audit_service
 from app.services import exam_question_service as eqs
-from app.services import exam_service
+from app.services import coding_test_service, exam_service
 from app.services.question_service import validate_question_payload
 from app.utils import clock
 
@@ -26,9 +26,11 @@ def validate_publishable(db: Session, exam) -> list[str]:
         if not q.is_active:
             problems.append(f"{label} is inactive.")
         try:
-            validate_question_payload(q.question_type, q.options, q.correct_answer)
+            validate_question_payload(q.question_type, q.options, q.correct_answer, q.coding)
         except AppError as e:
             problems.append(f"{label} is invalid: {e.message}")
+        if q.question_type == "CODING":
+            problems.extend(f"{label}: {p}" for p in coding_test_service.publish_problems(db, q))
         if float(r.marks if r.marks is not None else q.marks) <= 0:
             problems.append(f"{label} must have marks greater than 0.")
     return problems
@@ -42,7 +44,8 @@ def publish_exam(db: Session, user, exam_id: str):
     if problems:
         raise AppError("EXAM_NOT_PUBLISHABLE", "Exam cannot be published.", details={"problems": problems})
     for r in eqs.list_exam_questions(db, exam.id):
-        snap = eqs.build_snapshot(r.question)
+        extra = coding_test_service.publish_parts(db, r.question) if r.question.question_type == "CODING" else None
+        snap = eqs.build_snapshot(r.question, extra)
         if r.marks is not None:
             snap["marks"] = float(r.marks)  # per-exam override
         r.snapshot = snap

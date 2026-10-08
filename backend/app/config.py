@@ -19,6 +19,17 @@ class Settings(BaseSettings):
     EVENT_METADATA_MAX_BYTES: int = 2048
     EVENT_BATCH_MAX: int = 100
     EXPIRY_SWEEP_SECONDS: int = 30
+    # --- coding judge ---
+    CODE_MAX_SOURCE_BYTES: int = 65536
+    CODE_MAX_INFLIGHT: int = 3                # ek attempt ke max QUEUED+JUDGING jobs
+    CODE_MIN_INTERVAL_SECONDS: float = 2.0    # same attempt+question ke do submissions ke beech
+    CODE_MAX_SUBMITS_PER_QUESTION: int = 100
+    CODE_MAX_RUNS_PER_QUESTION: int = 300
+    TEST_MAX_BYTES: int = 2_000_000           # ek test ka input ya output
+    TESTS_MAX_PER_QUESTION: int = 100
+    TEST_UPLOAD_MAX_BYTES: int = 20_000_000   # ek request
+    JUDGE_LEASE_SECONDS: int = 60
+    JUDGE_MAX_TRIES: int = 3
 
     @property
     def origins(self) -> list[str]:
