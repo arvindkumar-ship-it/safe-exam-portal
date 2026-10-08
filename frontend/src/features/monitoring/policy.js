@@ -3,12 +3,10 @@ export const DEFAULT_POLICY = {
   clipboard: { block: true, allowInInputs: false }, shortcuts: true, contextMenu: true,
   selection: { block: true }, network: true, heartbeat: true, camera: false, microphone: false,
   accessibilityMode: false,
+  // Proctored auto-submit: in events par exam turant submit. Server policy `autoSubmit:false` se poora band.
+  autoSubmit: { fullscreenExit: true, pageHidden: true, windowBlur: true, graceMs: 0 },
   offlineGraceSeconds: 300, // B-23 (extra key)
-  autoSubmitOnViolation: false, // strict mode: tab switch / minimize / fullscreen exit par turant auto-submit
 };
-
-// Strict mode me yahi events violation hain (backend risk_service.STRICT_EVENTS ke same).
-export const STRICT_EVENTS = new Set(['PAGE_HIDDEN', 'WINDOW_BLUR', 'FULLSCREEN_EXIT']);
 
 // Student-facing messages (exact text).
 export const MESSAGES = {

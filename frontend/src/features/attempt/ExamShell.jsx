@@ -18,6 +18,9 @@ import WarningToast from '../monitoring/WarningToast.jsx';
 import AccessibilityNotice from '../monitoring/AccessibilityNotice.jsx';
 import StatusBar from './StatusBar.jsx';
 
+export const AUTO_SUBMIT_ARM_MS = 1500;   // mount ke turant baad ke transitions ignore
+const AUTO_REASON = { FULLSCREEN_EXIT: 'you left fullscreen', PAGE_HIDDEN: 'you switched tab or minimised the window', WINDOW_BLUR: 'the exam window lost focus' };
+
 function ExamShellInner({ attempt, policy, expiresAt, clock, onServerTime, finishRef, onSubmitted, underReviewFromServer }) {
   const monitoring = useExamMonitoring();
   const online = useOnlineStatus();
@@ -34,6 +37,9 @@ function ExamShellInner({ attempt, policy, expiresAt, clock, onServerTime, finis
   const idemKey = useRef(null);
   const doneRef = useRef(false);
   const confirmBtn = useRef(null);
+  const armedAt = useRef(Date.now());
+  const autoRef = useRef(false);
+  const [autoReason, setAutoReason] = useState(null);
 
   const autosave = useAutosave({ attemptId: attempt.id, saveFn: (qid, body) => saveAnswer(attempt.id, qid, body), initialVersions });
   const { remainingSeconds } = useTimer({ expiresAt, offsetMs: clock.offsetMs, onExpire: () => setExpired(true) });
@@ -76,7 +82,7 @@ function ExamShellInner({ attempt, policy, expiresAt, clock, onServerTime, finis
     return () => document.removeEventListener('keydown', onKey);
   }, [confirming]);
 
-  const doSubmit = async () => {
+  const doSubmit = async (extra = {}) => {
     setSubmitting(true);
     setError(null);
     try {
@@ -91,13 +97,33 @@ function ExamShellInner({ attempt, policy, expiresAt, clock, onServerTime, finis
         result = { status: terminal };
       }
       setConfirming(false);
-      await finish({ status: 'SUBMITTED', ...result });
+      await finish({ status: 'SUBMITTED', ...result, ...extra });
     } catch {
       setError('Could not submit right now. Your answers are saved. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
+
+  // Proctored auto-submit: fullscreen exit / tab switch / focus loss => turant submit (retry jab tak ho na jaye).
+  useEffect(() => {
+    const a = policy.autoSubmit;
+    const t = monitoring.lastWarningType;
+    if (!a || !monitoring.warningSeq || doneRef.current || autoRef.current) return;
+    const hit = (t === 'FULLSCREEN_EXIT' && a.fullscreenExit) || (t === 'PAGE_HIDDEN' && a.pageHidden) || (t === 'WINDOW_BLUR' && a.windowBlur);
+    if (!hit || Date.now() - armedAt.current < AUTO_SUBMIT_ARM_MS) return;
+    autoRef.current = true;
+    const reason = AUTO_REASON[t];
+    setAutoReason(reason);
+    (async () => {
+      if (a.graceMs > 0) await new Promise((r) => setTimeout(r, a.graceMs));
+      for (let i = 0; !doneRef.current; i++) {
+        await doSubmit({ autoSubmitted: true, autoSubmitReason: reason });
+        if (doneRef.current) return;
+        await new Promise((r) => setTimeout(r, Math.min(1000 * 2 ** i, 15000)));
+      }
+    })();
+  }, [monitoring.warningSeq]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className={`exam-shell${policy.accessibilityMode ? ' exam-shell--a11y' : ''}`}>
@@ -113,6 +139,8 @@ function ExamShellInner({ attempt, policy, expiresAt, clock, onServerTime, finis
       {expired && <div className="offline-banner" role="alert">Time is up. Waiting for the server to finalize your exam.</div>}
       {(underReviewFromServer ?? underReview) && <p role="status" className="offline-banner">Your attempt has been paused for review. Please wait for further instructions.</p>}
       <WarningToast />
+      {policy.autoSubmit && <p role="note" className="offline-banner">Leaving fullscreen or switching tabs will submit your exam automatically.</p>}
+      {autoReason && <div role="alert" className="offline-banner offline-banner--escalated">Your exam is being submitted automatically because {autoReason}.</div>}
 
       <div className="exam-body">
         <nav aria-label="Question navigation" className="question-nav">
@@ -150,7 +178,7 @@ function ExamShellInner({ attempt, policy, expiresAt, clock, onServerTime, finis
             <p>You will not be able to change your answers after submitting.</p>
             {error && <p role="alert">{error}</p>}
             <button type="button" onClick={() => setConfirming(false)} disabled={submitting}>Cancel</button>
-            <button type="button" ref={confirmBtn} className="primary" onClick={doSubmit} disabled={submitting}>
+            <button type="button" ref={confirmBtn} className="primary" onClick={() => doSubmit()} disabled={submitting}>
               {submitting ? 'Submitting…' : 'Confirm submit'}
             </button>
           </div>
