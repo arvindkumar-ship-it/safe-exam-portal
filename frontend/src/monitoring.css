@@ -36,7 +36,7 @@
 #exam-main:focus { outline: none; }
 .question-position { font-size: 13px; font-weight: 550; color: var(--muted); margin-bottom: var(--s-3); }
 
-.question-nav { position: sticky; top: 168px; flex: 0 0 188px; }
+.question-nav { position: sticky; top: 180px; flex: 0 0 188px; }
 .question-nav ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .question-nav li { width: calc((100% - 18px) / 4); }
 .question-nav button { width: 100%; aspect-ratio: 1; min-height: 36px; padding: 0; display: grid; place-items: center; font: inherit; font-weight: 550; font-size: 13px; font-variant-numeric: tabular-nums; color: var(--text-2); background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-md); cursor: pointer; transition: background-color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease); }

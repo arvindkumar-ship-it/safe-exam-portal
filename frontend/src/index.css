@@ -359,3 +359,18 @@ textarea.mono { font-family: var(--mono); font-size: 12.5px; }
 .field-inline { flex-direction: row !important; align-items: center; gap: var(--s-2) !important; }
 .field-inline select { width: 160px; }
 .review-section .empty { padding: var(--s-2) 0; text-align: left; }
+
+
+/* Bigger header */
+:root { --topbar-h: 72px; }
+.brand { font-size: 18px; gap: 12px; }
+.brand__mark { width: 36px; height: 36px; border-radius: 10px; }
+.brand__mark svg { width: 20px; height: 20px; }
+.header-right { gap: var(--s-3); }
+.app-header .btn.btn-icon { width: 44px; height: 44px; }
+.app-header .btn.btn-icon svg { width: 22px; height: 22px; }
+.user-chip { height: 48px; gap: 12px; }
+.avatar { width: 36px; height: 36px; font-size: 13px; }
+.user-chip__name { font-size: 15px; max-width: 220px; }
+.user-chip__role { font-size: 12.5px; }
+.app-header .btn { height: 44px; font-size: 14.5px; padding: 0 var(--s-5); }
