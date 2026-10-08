@@ -18,6 +18,7 @@ function initial(exam) {
     shuffleOptions: exam?.shuffleOptions ?? true,
     lockOnHighRisk: exam?.lockOnHighRisk ?? false,
     monitoringPolicy: JSON.stringify(exam?.monitoringPolicy ?? {}, null, 2),
+    strict: exam?.monitoringPolicy?.autoSubmitOnViolation === true,
   };
 }
 
@@ -68,7 +69,7 @@ export default function CreateExamForm({ exam = null, onSaved, onCancel }) {
         endsAt: fromLocalInput(f.endsAt),
         shuffleQuestions: f.shuffleQuestions,
         shuffleOptions: f.shuffleOptions,
-        monitoringPolicy: JSON.parse(f.monitoringPolicy || "{}"),
+        monitoringPolicy: { ...JSON.parse(f.monitoringPolicy || "{}"), autoSubmitOnViolation: f.strict },
       });
     }
     setBusy(true);
@@ -105,6 +106,7 @@ export default function CreateExamForm({ exam = null, onSaved, onCancel }) {
         <label><input type="checkbox" checked={f.shuffleOptions} onChange={set("shuffleOptions")} disabled={locked} /> Shuffle options</label>
         <label><input type="checkbox" checked={f.lockOnHighRisk} onChange={set("lockOnHighRisk")} /> Lock attempt for review on high risk</label>
       </div>
+      <label><input type="checkbox" checked={f.strict} onChange={set("strict")} disabled={locked} /> Strict proctoring: auto-submit on tab switch, window switch or fullscreen exit</label>
       <label>Monitoring policy (JSON)<textarea rows={4} value={f.monitoringPolicy} onChange={set("monitoringPolicy")} disabled={locked} />{fieldError("monitoringPolicy")}</label>
       <ErrorMessage error={apiError} />
       <div className="form-row">

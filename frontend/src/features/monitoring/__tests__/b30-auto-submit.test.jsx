@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 
 vi.mock('../../../auth/useAuth.js', async () => {
@@ -19,7 +19,7 @@ import ExamShell, { AUTO_SUBMIT_ARM_MS } from '../../attempt/ExamShell.jsx';
 let n = 0;
 const attempt = (policy = {}) => ({
   id: `auto-${++n}`, status: 'IN_PROGRESS', expiresAt: new Date(Date.now() + 3600_000).toISOString(), serverTime: new Date().toISOString(),
-  monitoringPolicy: policy, questions: [{ id: 'q1', type: 'SHORT_TEXT', marks: 1, prompt: 'Q' }],
+  monitoringPolicy: { autoSubmitOnViolation: true, ...policy }, questions: [{ id: 'q1', type: 'SHORT_TEXT', marks: 1, prompt: 'Q' }],
 });
 const armed = () => act(async () => { await new Promise((r) => setTimeout(r, AUTO_SUBMIT_ARM_MS + 100)); });
 const hide = () => { Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true }); fireEvent(document, new Event('visibilitychange')); };
@@ -42,9 +42,9 @@ describe('proctored auto-submit', () => {
     await waitFor(() => expect(onSubmitted).toHaveBeenCalledWith(expect.objectContaining({ status: 'SUBMITTED', autoSubmitted: true, autoSubmitReason: expect.stringMatching(/tab/) })));
   });
 
-  it('window blur is ignored right after mount and when policy turns it off', async () => {
+  it('nothing happens when autoSubmitOnViolation is off', async () => {
     const onSubmitted = vi.fn();
-    render(<ExamShell attempt={attempt({ autoSubmit: false })} consentGiven onSubmitted={onSubmitted} />);
+    render(<ExamShell attempt={attempt({ autoSubmitOnViolation: false })} consentGiven onSubmitted={onSubmitted} />);
     await armed();
     hide();
     await new Promise((r) => setTimeout(r, 300));
@@ -60,5 +60,30 @@ describe('proctored auto-submit', () => {
     hide();
     await waitFor(() => expect(onSubmitted).toHaveBeenCalled(), { timeout: 4000 });
     expect(attemptApi.submit).toHaveBeenCalledTimes(2);
+  });
+
+  describe('fullscreen gate', () => {
+    const setFs = (on) => { Object.defineProperty(document, 'fullscreenElement', { value: on ? document.body : null, configurable: true }); fireEvent(document, new Event('fullscreenchange')); };
+    beforeEach(() => { Object.defineProperty(document, 'fullscreenEnabled', { value: true, configurable: true }); setFs(false); });
+    afterEach(() => { Object.defineProperty(document, 'fullscreenEnabled', { value: undefined, configurable: true }); });
+
+    it('blocks the exam until fullscreen and ignores tab switch before that', async () => {
+      render(<ExamShell attempt={attempt()} consentGiven onSubmitted={vi.fn()} />);
+      expect(screen.getByRole('dialog', { name: /Enter fullscreen/ })).toBeInTheDocument();
+      await armed();
+      hide();
+      await new Promise((r) => setTimeout(r, 300));
+      expect(attemptApi.submit).not.toHaveBeenCalled();
+    });
+
+    it('leaving fullscreen after entering auto-submits', async () => {
+      const onSubmitted = vi.fn();
+      render(<ExamShell attempt={attempt()} consentGiven onSubmitted={onSubmitted} />);
+      act(() => setFs(true));
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: /Enter fullscreen/ })).toBeNull());
+      await armed();
+      act(() => setFs(false));
+      await waitFor(() => expect(onSubmitted).toHaveBeenCalledWith(expect.objectContaining({ autoSubmitted: true, autoSubmitReason: expect.stringMatching(/fullscreen/) })));
+    });
   });
 });

@@ -40,6 +40,10 @@ function ExamShellInner({ attempt, policy, expiresAt, clock, onServerTime, finis
   const armedAt = useRef(Date.now());
   const autoRef = useRef(false);
   const [autoReason, setAutoReason] = useState(null);
+  const fsSeen = useRef(false);
+  // Strict mode + fullscreen policy: fullscreen me aaye bina exam shuru nahi (native kiosk / fullscreen-unsupported browser par gate nahi).
+  const needFs = !!policy.autoSubmitOnViolation && !!policy.fullscreen && !isNativeClient() && typeof document !== 'undefined' && !!document.fullscreenEnabled;
+  useEffect(() => { if (monitoring.status.fullscreen) fsSeen.current = true; }, [monitoring.status.fullscreen]);
 
   const autosave = useAutosave({ attemptId: attempt.id, saveFn: (qid, body) => saveAnswer(attempt.id, qid, body), initialVersions });
   const { remainingSeconds } = useTimer({ expiresAt, offsetMs: clock.offsetMs, onExpire: () => setExpired(true) });
@@ -109,6 +113,7 @@ function ExamShellInner({ attempt, policy, expiresAt, clock, onServerTime, finis
   useEffect(() => {
     const t = monitoring.lastWarningType;
     if (!policy.autoSubmitOnViolation || !monitoring.warningSeq || doneRef.current || autoRef.current) return;
+    if (needFs && !fsSeen.current) return;   // pehli baar fullscreen me aane se pehle koi violation nahi
     if (!STRICT_EVENTS.has(t) || Date.now() - armedAt.current < AUTO_SUBMIT_ARM_MS) return;
     autoRef.current = true;
     const reason = AUTO_REASON[t];
@@ -136,6 +141,15 @@ function ExamShellInner({ attempt, policy, expiresAt, clock, onServerTime, finis
       {expired && <div className="offline-banner" role="alert">Time is up. Waiting for the server to finalize your exam.</div>}
       {(underReviewFromServer ?? underReview) && <p role="status" className="offline-banner">Your attempt has been paused for review. Please wait for further instructions.</p>}
       <WarningToast />
+      {needFs && !monitoring.status.fullscreen && !autoReason && !doneRef.current && (
+        <div className="modal-backdrop">
+          <div className="modal" role="dialog" aria-modal="true" aria-labelledby="fs-title">
+            <h2 id="fs-title">Enter fullscreen to continue</h2>
+            <p>This exam must run in fullscreen. Leaving fullscreen, switching tabs or switching windows will submit your exam automatically.</p>
+            <button type="button" className="primary" onClick={() => monitoring.enterFullscreen()}>Enter fullscreen</button>
+          </div>
+        </div>
+      )}
       {policy.autoSubmitOnViolation && <p role="note" className="offline-banner">Leaving fullscreen or switching tabs will submit your exam automatically.</p>}
       {autoReason && <div role="alert" className="offline-banner offline-banner--escalated">Your exam is being submitted automatically because {autoReason}.</div>}
 
