@@ -131,7 +131,7 @@ function ExamShellInner({ attempt, policy, expiresAt, clock, onServerTime, finis
           {q ? (
             <>
               <p className="question-position" aria-live="polite">Question {index + 1} of {questions.length}</p>
-              <QuestionCard key={q.id} question={q} value={answers[q.id]} onChange={(v) => setAnswer(q.id, v)} answerLabel={`Answer for question ${index + 1}`} />
+              <QuestionCard key={q.id} attemptId={attempt.id} question={q} value={answers[q.id]} onChange={(v) => setAnswer(q.id, v)} answerLabel={`Answer for question ${index + 1}`} />
             </>
           ) : <p>No questions available.</p>}
         </main>

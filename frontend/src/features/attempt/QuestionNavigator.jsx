@@ -1,6 +1,7 @@
 export function isAnswered(value) {
   if (value === undefined || value === null) return false;
   if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "object") return String(value.source ?? "").trim() !== "";   // CODING draft
   return String(value).trim() !== "";
 }
 

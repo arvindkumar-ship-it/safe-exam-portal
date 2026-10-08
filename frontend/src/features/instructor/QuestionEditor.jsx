@@ -2,8 +2,9 @@ import { useState } from "react";
 import { questionApi } from "../../api/questionApi";
 import Button from "../../components/Button";
 import ErrorMessage from "../../components/ErrorMessage";
+import { CodingConfigFields, CodingTestsPanel, codingBody, defaultCoding } from "./CodingAuthoring";
 
-const TYPES = ["MCQ_SINGLE", "MCQ_MULTIPLE", "SHORT_TEXT"];
+const TYPES = ["MCQ_SINGLE", "MCQ_MULTIPLE", "SHORT_TEXT", "CODING"];
 
 function initial(q) {
   const type = q?.questionType ?? "MCQ_SINGLE";
@@ -11,8 +12,9 @@ function initial(q) {
   let correct = q?.correctAnswer ?? null;
   if (type === "MCQ_MULTIPLE") correct = Array.isArray(correct) ? correct : [];
   if (type === "SHORT_TEXT") correct = [].concat(correct ?? []).join("\n");
+  if (type === "CODING") correct = null;
   return {
-    type, prompt: q?.prompt ?? "", options, correct,
+    type, prompt: q?.prompt ?? "", options, correct, coding: defaultCoding(q?.coding),
     marks: String(q?.marks ?? 1), negativeMarks: String(q?.negativeMarks ?? 0), explanation: q?.explanation ?? "",
   };
 }
@@ -26,7 +28,9 @@ export default function QuestionEditor({ question = null, onSaved, onCancel }) {
   const [error, setError] = useState(null);
   const [localError, setLocalError] = useState("");
   const [busy, setBusy] = useState(false);
-  const isMcq = f.type !== "SHORT_TEXT";
+  const isMcq = f.type === "MCQ_SINGLE" || f.type === "MCQ_MULTIPLE";
+  const isCoding = f.type === "CODING";
+  const [current, setCurrent] = useState(question);
 
   function changeType(type) {
     const fresh = initial({ questionType: type, prompt: f.prompt, marks: f.marks, negativeMarks: f.negativeMarks });
@@ -46,7 +50,11 @@ export default function QuestionEditor({ question = null, onSaved, onCancel }) {
 
   function buildBody() {
     const body = { prompt: f.prompt.trim(), marks: Number(f.marks), negativeMarks: Number(f.negativeMarks), explanation: f.explanation || null };
-    if (isMcq) {
+    if (isCoding) {
+      body.options = null;
+      body.correctAnswer = null;
+      body.coding = codingBody(f.coding);
+    } else if (isMcq) {
       body.options = f.options.map((o) => ({ id: o.id, text: o.text.trim() }));
       body.correctAnswer = f.correct;
     } else {
@@ -63,15 +71,17 @@ export default function QuestionEditor({ question = null, onSaved, onCancel }) {
     setLocalError("");
     if (!f.prompt.trim()) return setLocalError("Prompt is required.");
     if (!(Number(f.marks) > 0)) return setLocalError("Marks must be more than 0.");
+    if (isCoding && f.coding.languages.length === 0) return setLocalError("Pick at least one language.");
     if (isMcq && f.options.some((o) => !o.text.trim())) return setLocalError("Every option needs text.");
     if (isMcq && (Array.isArray(f.correct) ? f.correct.length === 0 : !f.correct)) return setLocalError("Pick the correct answer.");
     setBusy(true);
     try {
       const body = buildBody();
-      const saved = question
-        ? await questionApi.updateQuestion(question.id, body)
+      const saved = current
+        ? await questionApi.updateQuestion(current.id, body)
         : await questionApi.createQuestion({ questionType: f.type, ...body });
-      onSaved?.(saved);
+      if (isCoding) setCurrent(saved);          // tests add karne ke liye editor khula rehta hai
+      else onSaved?.(saved);
     } catch (err) {
       setError(err);
     } finally {
@@ -81,9 +91,9 @@ export default function QuestionEditor({ question = null, onSaved, onCancel }) {
 
   return (
     <form onSubmit={submit} className="card form" aria-label="Question editor">
-      <h3>{question ? "Edit question" : "New question"}</h3>
+      <h3>{current ? "Edit question" : "New question"}</h3>
       <label>Type
-        <select value={f.type} onChange={(e) => changeType(e.target.value)} disabled={!!question}>
+        <select value={f.type} onChange={(e) => changeType(e.target.value)} disabled={!!current}>
           {TYPES.map((t) => <option key={t}>{t}</option>)}
         </select>
       </label>
@@ -105,11 +115,14 @@ export default function QuestionEditor({ question = null, onSaved, onCancel }) {
           ))}
           <Button variant="secondary" onClick={addOption}>Add option</Button>
         </fieldset>
+      ) : isCoding ? (
+        <CodingConfigFields value={f.coding} onChange={(coding) => setF({ ...f, coding })} />
       ) : (
         <label>Accepted answers (one per line; leave empty for manual review)
           <textarea value={f.correct} onChange={(e) => setF({ ...f, correct: e.target.value })} />
         </label>
       )}
+      {isCoding && (current ? <CodingTestsPanel questionId={current.id} /> : <p><small>Save the question first, then add test cases.</small></p>)}
       <div className="form-row">
         <label>Marks<input type="number" step="0.01" value={f.marks} onChange={(e) => setF({ ...f, marks: e.target.value })} /></label>
         <label>Negative marks<input type="number" step="0.01" value={f.negativeMarks} onChange={(e) => setF({ ...f, negativeMarks: e.target.value })} /></label>
@@ -119,6 +132,7 @@ export default function QuestionEditor({ question = null, onSaved, onCancel }) {
       <ErrorMessage error={error} />
       <div className="form-row">
         <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save question"}</Button>
+        {isCoding && current && <Button variant="secondary" onClick={() => onSaved?.(current)}>Done</Button>}
         {onCancel && <Button variant="secondary" onClick={onCancel}>Cancel</Button>}
       </div>
     </form>

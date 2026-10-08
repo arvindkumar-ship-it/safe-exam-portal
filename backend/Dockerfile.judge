@@ -1,0 +1,12 @@
+# Judge worker image (untrusted code yahin chalta hai). Render ke normal web service pe nahi, Docker/VPS pe chalao.
+FROM python:3.11-slim-bookworm
+RUN apt-get update && apt-get install -y --no-install-recommends g++ gcc libc6-dev pypy3 \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY app ./app
+# sandboxed code (uid 65534) ko /app padhne nahi dena
+RUN chmod -R go-rwx /app && mkdir /work && chmod 755 /work
+ENV JUDGE_WORK_DIR=/work PYTHONUNBUFFERED=1
+CMD ["python", "-m", "app.judge.worker"]

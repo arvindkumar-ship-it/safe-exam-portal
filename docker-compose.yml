@@ -23,5 +23,24 @@ services:
       db: { condition: service_healthy }
     ports: ["8001:8000"]
 
+  # Judge worker: submissions uthata hai, sandbox me chalata hai. Scale: docker compose up --scale judge=2
+  judge:
+    build: { context: ./backend, dockerfile: Dockerfile.judge }
+    environment:
+      ENV: local
+      DATABASE_URL: postgresql+psycopg://safeexam:safeexam@db:5432/safeexam
+      JWT_SECRET: change-me-local-only-min-32-chars-long
+    depends_on:
+      db: { condition: service_healthy }
+      backend: { condition: service_started }   # migrations backend ke start pe chalti hain; worker tab tak retry karta hai
+    restart: unless-stopped
+    read_only: true
+    tmpfs: ["/work:size=512m,exec", "/tmp:size=64m"]
+    cap_drop: [ALL]
+    cap_add: [SETUID, SETGID, CHOWN, DAC_OVERRIDE, FOWNER, KILL]   # sirf sandbox uid drop + cleanup ke liye
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 512
+    mem_limit: 2g
+
 volumes:
   pgdata:

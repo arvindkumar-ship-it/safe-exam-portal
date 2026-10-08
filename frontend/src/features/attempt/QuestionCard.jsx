@@ -1,4 +1,6 @@
-export default function QuestionCard({ question, value, onChange, answerLabel = "Your answer" }) {
+import CodingPane from "./CodingPane.jsx";
+
+export default function QuestionCard({ question, value, onChange, answerLabel = "Your answer", attemptId }) {
   const { id, type, prompt, options = [], marks } = question;
   const name = `q-${id}`;
 
@@ -25,6 +27,7 @@ export default function QuestionCard({ question, value, onChange, answerLabel = 
             </label>
           );
         })}
+      {type === "CODING" && <CodingPane question={question} attemptId={attemptId} value={value} onChange={onChange} />}
       {type === "SHORT_TEXT" && (
         <textarea aria-label={answerLabel} maxLength={2000} rows={4} value={value ?? ""} onChange={(e) => onChange(e.target.value)} />
       )}
