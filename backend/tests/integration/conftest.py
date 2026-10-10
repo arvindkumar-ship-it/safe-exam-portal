@@ -11,16 +11,27 @@ if _url:
     if not os.environ.get("TEST_DATABASE_URL"):
         _url = _url.rsplit("/", 1)[0] + "/" + _url.rsplit("/", 1)[1].split("?")[0] + "_test"
     os.environ["DATABASE_URL"] = _url
+from urllib.parse import urlsplit, unquote
+
+def _require_test_database(url):
+    name = unquote(urlsplit(url).path.rsplit("/", 1)[-1])
+    if not name.endswith("_test"):
+        raise RuntimeError("Destructive test fixtures require a dedicated database ending in _test")
+
+if os.environ.get("DATABASE_URL"):
+    _require_test_database(os.environ["DATABASE_URL"])
+
 
 
 def _ensure_db():
     import psycopg
+    import psycopg.sql
     from psycopg.conninfo import conninfo_to_dict
     d = conninfo_to_dict(os.environ["DATABASE_URL"].replace("postgresql+psycopg://", "postgresql://"))
     name = d.pop("dbname")
     with psycopg.connect(**d, dbname="postgres", autocommit=True) as c:
         if not c.execute("SELECT 1 FROM pg_database WHERE datname=%s", (name,)).fetchone():
-            c.execute(f'CREATE DATABASE "{name}"')
+            c.execute(psycopg.sql.SQL("CREATE DATABASE {}").format(psycopg.sql.Identifier(name)))
 
 
 @pytest.fixture(scope="session", autouse=True)
