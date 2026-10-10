@@ -54,3 +54,5 @@ Last verified: backend 165 passed (incl. 7 C-contract tests), frontend 241 passe
 
 ## Launch checklist
 HTTPS · secrets in env · DB backups · CORS restricted · rate limiting · JWT expiry · Argon2 · admin MFA (future) · no passwords/answers in logs · privacy notice · load test.
+
+Audit repair scope, reproducible checks and remaining limitations: [AUDIT_FIXES.md](AUDIT_FIXES.md).
